@@ -255,27 +255,67 @@ function tone(t,type,f0,f1,dur,peak,dest=SFXG,rev=0,att=.004){
   const g=AC.createGain();env(g,t,att,peak,dur);o.connect(g);g.connect(dest);if(rev)g.connect(REV);o.start(t);o.stop(t+att+dur+.05);
 }
 function metal(t,parts,dur,peak,rev){parts.forEach((p,i)=>tone(t,'sine',p,p*.995,dur*(1-i*.12),peak/(1+i*.6),SFXG,rev,.002))}
+/* richer building blocks for weightier, less "game-beep" sounds */
+function nz(t,o){ // shaped noise: o={f:[[time,freq],...],type,q,a,h,d,peak,rev,dest}
+  const src=AC.createBufferSource();src.buffer=NOISE;src.loop=true;const fl=AC.createBiquadFilter();fl.type=o.type||'bandpass';fl.Q.value=o.q||1;
+  (o.f||[[0,1000]]).forEach(([dt,fr],k)=>k?fl.frequency.exponentialRampToValueAtTime(fr,t+dt):fl.frequency.setValueAtTime(fr,t+dt));
+  const g=AC.createGain(),a=o.a||.004,h=o.h||0,d=o.d||.2;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(o.peak||.5,t+a);
+  g.gain.setValueAtTime(o.peak||.5,t+a+h);g.gain.exponentialRampToValueAtTime(.0001,t+a+h+d);
+  src.connect(fl);fl.connect(g);g.connect(o.dest||SFXG);if(o.rev)g.connect(REV);src.start(t,Math.random()*.6);src.stop(t+a+h+d+.05);
+}
+function steel(t,base,dur,peak,rev,bright=1){ // inharmonic plate/blade modes, detuned pairs for a shimmering ring
+  [[1,1],[1.593,.7],[2.135,.55],[2.83,.45],[3.51,.32],[4.23,.22],[5.4,.14]].forEach(([r,a],i)=>{
+    [1,1.004].forEach(dtn=>{const o=AC.createOscillator();o.type='sine';o.frequency.value=base*r*dtn;
+      const g=AC.createGain(),dd=dur*(1-i*.09);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(peak*a*(i>3?bright:1)*.5,t+.002);g.gain.exponentialRampToValueAtTime(.0001,t+dd);
+      o.connect(g);g.connect(SFXG);if(rev)g.connect(REV);o.start(t);o.stop(t+dd+.05)})});
+}
+function thump(t,f,dur,peak){const o=AC.createOscillator();o.type='sine';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f*.45,t+dur);
+  const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=f*3;const g=AC.createGain();env(g,t,.003,peak,dur);o.connect(lp);lp.connect(g);g.connect(SFXG);o.start(t);o.stop(t+dur+.05)}
 const SFX={
-  slash(w=1){noise(AC.currentTime,.1+.06*w,'bandpass',3200,700,.35+.2*w,1.4)},
-  hit(h){const t=AC.currentTime;tone(t,'sine',h?150:190,45,h?.22:.14,h?.9:.6);noise(t,.07,'lowpass',2200,500,.5)},
-  crit(){const t=AC.currentTime;tone(t,'sine',120,35,.35,1);noise(t,.18,'lowpass',3000,300,.7,1,SFXG,1);tone(t,'sawtooth',900,120,.25,.18)},
-  clash(){const t=AC.currentTime;metal(t,[1240,1870,2650,3330],.7,.38,1);noise(t,.04,'highpass',4000,3000,.6)},
-  block(){const t=AC.currentTime;metal(t,[1500,2300],.22,.25,0);noise(t,.03,'highpass',3500,3000,.35)},
-  deflect(){const t=AC.currentTime;metal(t,[1700,2550,3400,4260],1.1,.45,1);tone(t+.04,'triangle',880,1760,.25,.15,SFXG,1)},
-  cast(big){const t=AC.currentTime;tone(t,'sine',big?220:330,big?880:990,big?.45:.25,.25,SFXG,1);if(big){tone(t,'triangle',330,1320,.5,.12,SFXG,1);noise(t,.5,'bandpass',600,3000,.18,2,SFXG,1)}},
-  dash(){noise(AC.currentTime,.28,'bandpass',600,4000,.45,1.2)},
-  thunder(){const t=AC.currentTime;noise(t,.08,'highpass',3000,2000,.8);noise(t,1.2,'lowpass',1800,120,.8,.7,SFXG,1);tone(t,'sine',70,30,.8,.6)},
-  fire(big){noise(AC.currentTime,big?.6:.3,'lowpass',big?1400:900,200,big?.5:.3,.8)},
-  boom(){const t=AC.currentTime;noise(t,1.4,'lowpass',900,60,1,.7,SFXG,1);tone(t,'sine',80,28,1,1)},
-  ult(){const t=AC.currentTime;tone(t,'sawtooth',55,55,2.2,.22,SFXG,1,.6);tone(t,'sine',110,110,2.2,.2,SFXG,1,.8);tone(t+.3,'triangle',880,1760,1.4,.06,SFXG,1,.5);noise(t,2,'bandpass',300,2400,.15,3,SFXG,1)},
-  ko(){const t=AC.currentTime;this.boom();metal(t+.05,[196,392,588,790],2.4,.4,1)},
-  beep(){tone(AC.currentTime,'square',660,660,.12,.12)},
-  gong(){const t=AC.currentTime;metal(t,[147,294,441,622,830],2.6,.5,1);tone(t,'sine',73,73,2.6,.35,SFXG,1)},
-  heal(){const t=AC.currentTime;tone(t,'sine',660,990,.25,.15,SFXG,1)}
+  slash(w=1){ // katana swing: air rushing past the blade, rises then falls
+    const t=AC.currentTime,L=.16+.1*w;
+    nz(t,{f:[[0,700],[L*.45,2600+600*w],[L,900]],q:2.2,a:L*.4,d:L*.75,peak:.38+.14*w});
+    nz(t,{type:'highpass',f:[[0,5000],[L,3000]],q:.7,a:L*.35,d:L*.6,peak:.09+.05*w});
+    if(w>1.1)nz(t,{f:[[0,180],[L*.5,420],[L,160]],q:1.5,a:L*.4,d:L*.8,peak:.35});
+  },
+  hit(h){ // blade biting in: sharp slice + dull body impact
+    const t=AC.currentTime;
+    nz(t,{type:'highpass',f:[[0,3800],[.08,2200]],q:.8,d:.08,peak:.45});
+    nz(t,{type:'lowpass',f:[[0,1400],[.12,250]],q:.9,d:h?.22:.14,peak:h?.9:.65});
+    thump(t,h?95:120,h?.24:.15,h?.75:.5);
+  },
+  crit(){const t=AC.currentTime;this.hit(1);nz(t,{type:'lowpass',f:[[0,700],[.6,80]],q:.7,d:.6,peak:.7,rev:1});thump(t,70,.5,.9);nz(t+.01,{f:[[0,2500],[.2,6000]],q:6,d:.22,peak:.2,rev:1})},
+  clash(){ // two blades meeting at full force
+    const t=AC.currentTime;nz(t,{f:[[0,6000]],q:3,d:.03,peak:.7});
+    steel(t,R(560,640),1.4,.55,1,1);steel(t+.003,R(1180,1320),.9,.25,1,.8);
+    nz(t+.01,{f:[[0,4200],[.35,7000]],q:9,a:.01,d:.35,peak:.18,rev:1});
+  },
+  block(){const t=AC.currentTime;nz(t,{f:[[0,5000]],q:2.5,d:.025,peak:.5});steel(t,R(700,820),.45,.32,0,.7);nz(t,{type:'lowpass',f:[[0,900],[.1,200]],d:.1,peak:.35})},
+  deflect(){ // clean parry: bright ring and a blade-on-blade slide
+    const t=AC.currentTime;nz(t,{f:[[0,6500]],q:3,d:.03,peak:.6});
+    steel(t,R(880,940),2,.5,1,1.2);nz(t+.02,{f:[[0,3000],[.4,8500]],q:12,a:.02,h:.08,d:.35,peak:.22,rev:1});
+  },
+  cast(big){const t=AC.currentTime;nz(t,{f:[[0,400],[big?.6:.35,2400]],q:3,a:big?.4:.22,d:.3,peak:big?.4:.38,rev:1});
+    nz(t,{type:'lowpass',f:[[0,200],[.5,500]],q:1,a:.2,d:.4,peak:big?.45:.35});if(big)steel(t+.25,R(420,460),1.6,.18,1,.6)},
+  dash(){const t=AC.currentTime;nz(t,{f:[[0,400],[.12,3200],[.32,700]],q:1.6,a:.1,d:.25,peak:.5});nz(t,{type:'highpass',f:[[0,6000]],a:.08,d:.2,peak:.12})},
+  thunder(){const t=AC.currentTime;nz(t,{type:'highpass',f:[[0,2500]],d:.07,peak:.9});
+    for(let k=0;k<4;k++)nz(t+k*.035,{type:'bandpass',f:[[0,R(1500,4000)]],q:2,d:.05,peak:.5});
+    nz(t+.03,{type:'lowpass',f:[[0,1600],[1.6,70]],q:.6,a:.02,d:1.6,peak:.9,rev:1});thump(t,60,1,.8)},
+  fire(big){const t=AC.currentTime;nz(t,{type:'lowpass',f:[[0,big?1600:1000],[big?.7:.35,250]],q:.6,a:.04,d:big?.65:.32,peak:big?.55:.32});nz(t,{type:'highpass',f:[[0,3500]],a:.02,d:.15,peak:.08})},
+  boom(){const t=AC.currentTime;nz(t,{type:'lowpass',f:[[0,1200],[1.6,50]],q:.7,d:1.6,peak:1,rev:1});thump(t,72,1.1,1);nz(t,{type:'highpass',f:[[0,3000]],d:.08,peak:.4})},
+  ult(){const t=AC.currentTime;tone(t,'sawtooth',55,55,2.2,.18,SFXG,1,.6);tone(t,'sine',110,110,2.2,.18,SFXG,1,.8);
+    nz(t,{f:[[0,250],[2,2600]],q:4,a:1.2,d:.9,peak:.2,rev:1});steel(t+1.2,330,2.4,.22,1,.5)},
+  ko(){const t=AC.currentTime;this.boom();steel(t+.04,196,3,.4,1,.5)},
+  beep(){const t=AC.currentTime;thump(t,85,.45,1);nz(t,{type:'lowpass',f:[[0,700],[.3,120]],d:.3,peak:.45,rev:1})},
+  gong(){const t=AC.currentTime;steel(t,147,3.2,.6,1,.6);thump(t,70,1.2,.6)},
+  heal(){}
 };
 function sfx(n,...a){if(!AC||!SND.on||document.hidden)return;const now=AC.currentTime;if(lastPlay[n]&&now-lastPlay[n]<.035)return;lastPlay[n]=now;try{SFX[n](...a)}catch(e){}}
 /* music: taiko + plucked "in" scale over a drone */
 const SCALE=[293.66,311.13,392,440,466.16,587.33,622.25,783.99];let mNext=0,mStep=0,mNote=3,droneOn=0;
+function pluck(t,f){const o=AC.createOscillator(),o2=AC.createOscillator();o.type='sawtooth';o2.type='triangle';o.frequency.value=f;o2.frequency.value=f*1.002;
+  const lp=AC.createBiquadFilter();lp.type='lowpass';lp.Q.value=2;lp.frequency.setValueAtTime(3200,t);lp.frequency.exponentialRampToValueAtTime(500,t+.25);
+  const g=AC.createGain();env(g,t,.002,.1,.9);o.connect(lp);o2.connect(lp);lp.connect(g);g.connect(MUSG);g.connect(REV);o.start(t);o2.start(t);o.stop(t+1);o2.stop(t+1)}
 function musicTick(){
   if(!AC||!SND.music)return;const spb=60/92/2;if(mNext<AC.currentTime)mNext=AC.currentTime+.05;
   const ultDuck=G.ult?.25:1,pick=document.body.classList.contains('picking')?.55:1;
@@ -286,7 +326,7 @@ function musicTick(){
     if(st%4===2)noise(t,.05,'bandpass',3500,2500,.12,4,MUSG);
     if(st%16===12&&bar===3)for(let k=0;k<3;k++)tone(t+k*spb/3,'sine',110,40,.18,.4,MUSG);
     if(st%2===0&&Math.random()<(st%8===0?.9:.45)){mNote=Math.max(0,Math.min(SCALE.length-1,mNote+[-2,-1,-1,1,1,2][Math.floor(Math.random()*6)]));
-      const f=SCALE[mNote]*(bar===2?1:1);tone(t,'triangle',f,f*.998,.5,.13,MUSG,1,.002);tone(t,'sawtooth',f*2,f*2,.12,.025,MUSG,0,.002)}
+      const f=SCALE[mNote]*(bar===2?1:1);pluck(t,f)}
     if(st===0&&bar===0){tone(t,'sine',73.42,73.42,spb*30,.12,MUSG,1,1.2);tone(t,'sine',110,110,spb*30,.06,MUSG,1,1.4)}
     mNext+=spb;mStep++;
   }
