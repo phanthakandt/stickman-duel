@@ -387,7 +387,7 @@ function brain(f,o){
     if(!f.used&&d<150&&f.vy>-7&&Math.sign(f.vx)===dir){set(f,'airslash');f.used=true;f.aid++}
     return;
   }
-  if(f.hp<40&&!f.ultUsed&&o.st!=='ko'&&f.y>=GY){startUlt(f,o);return}
+  if(f.en>=100&&f.hp<40&&!f.ultUsed&&o.st!=='ko'&&f.y>=GY){startUlt(f,o);return}
   const A=ATK[o.st],melee=A&&A.rg>0&&d<210&&o.t<A.w;
   const pr=projs.find(p=>p.o!==f&&Math.sign(f.x-p.x)===Math.sign(p.vx)&&Math.abs(f.x-p.x)<260);
   if((melee||pr)&&f.seen!==o.aid){
