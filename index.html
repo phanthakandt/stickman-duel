@@ -35,7 +35,9 @@ h1{font:700 clamp(28px,4vw,42px)/1.05 Kanit,sans-serif;margin:0 0 4px;text-wrap:
 .slot.r{text-align:right}
 .vsx{font:clamp(24px,4vw,40px) Bungee,sans-serif;color:var(--gold);text-shadow:0 3px 0 #120a07}
 .hint{margin:0;text-align:center;color:var(--mute)}
-.roster{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.roster{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media(min-width:1001px){.ch{grid-template-columns:84px minmax(0,1fr)!important}.ch canvas{width:84px!important;height:105px!important}.ch .n{font-size:18px}}
+@media(max-width:1000px){.roster{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .ch{position:relative;background:#221a15;border:2px solid var(--line);border-radius:12px;padding:8px 12px 10px 6px;display:grid;grid-template-columns:104px minmax(0,1fr);gap:8px;align-items:center;text-align:left;font-weight:400;min-height:0}
 .ch.p0,.ch.p1{border-color:currentColor}
 .ch canvas{display:block;width:104px;height:130px}
@@ -151,13 +153,14 @@ const ROSTER=[
   {name:'นีลนภา',ult:'rain',stance:'chudan',alt:['#8f8cff','#2e3a96'],col:'#3fbcff',dark:'#185b86',acc:'band',style:'สายตั้งรับ',desc:'ใจเย็น ตั้งดาบรอปัดแล้วสวน',agg:.5,pb:.52,agi:.16,jumpy:.07,spd:2.5,pow:1.03},
   {name:'หยกพรายพลิ้ว',ult:'wind',stance:'waki',alt:['#b4f05a','#5a7d1c'],col:'#5ce0c0',dark:'#1d7a66',acc:'scarf',style:'สายพลิ้วไหว',desc:'หลบเก่ง ชอบกระโดดฟันจากกลางอากาศ',agg:0.66,pb:0.32,agi:.3,jumpy:.2,spd:3.1,pow:1.1},
   {name:'อำพันหลับใหล',ult:'meteor',stance:'hasso',alt:['#d4d4d4','#5e5e5e'],col:'#e8a25c',dark:'#8a5624',acc:'hat',style:'สายดาบหนัก',desc:'เดินช้า แต่ฟันทีหนักที่สุด',agg:.66,pb:.42,agi:.06,jumpy:.05,spd:2.15,pow:1.1},
-  {name:'สุวรรณรัตติกาล',ult:'iai',stance:'iai',alt:['#fff6c8','#8f8250'],col:'#ffd94a',dark:'#9a7a12',acc:'band',style:'สายสายฟ้า',desc:'เร็วที่สุดในสนาม บุกไม่ยั้ง',agg:.76,pb:0.26,agi:.22,jumpy:.14,spd:3.2,pow:1.12},
-  {name:'บุษบาราตรี',ult:'petal',stance:'gedan',alt:['#ff6b8f','#8f2340'],col:'#c49bff',dark:'#5d3f99',acc:'hood',style:'สายนักฆ่า',desc:'เงียบ เร็ว หลบแล้วสวนแม่น',agg:0.6,pb:0.22,agi:0.2,jumpy:.16,spd:2.9,pow:0.87}
+  {name:'สุวรรณรัตติกาล',ult:'iai',stance:'iai',alt:['#fff6c8','#8f8250'],col:'#ffd94a',dark:'#9a7a12',acc:'band',style:'สายชักดาบ',desc:'เร็วที่สุดในสนาม บุกไม่ยั้ง',agg:.76,pb:0.26,agi:.22,jumpy:.14,spd:3.2,pow:1.12},
+  {name:'บุษบาราตรี',ult:'petal',stance:'gedan',alt:['#ff6b8f','#8f2340'],col:'#c49bff',dark:'#5d3f99',acc:'hood',style:'สายนักฆ่า',desc:'เงียบ เร็ว หลบแล้วสวนแม่น',agg:0.6,pb:0.22,agi:0.2,jumpy:.16,spd:2.9,pow:0.87},
+  {name:'ชมพูนุทพิโรธ',ult:'storm',stance:'kasumi',alt:['#7af0ff','#1f6f80'],col:'#ff5fb7',dark:'#8f1f5e',acc:'pony',style:'สายอัสนี',desc:'ฟาดสายฟ้าให้ชา แล้วรุมฟัน',agg:.74,pb:.29,agi:.22,jumpy:.15,spd:3,pow:1.1}
 ];
 let fxsDummy=0,F=[],projs=[],parts=[],pops=[],G={f:0},logItems=[],picks=[0,1],slot=0,selecting=true;
 function mk(i,r){const o=Object.assign({id:i,wins:0},ROSTER[r]);if(i===1&&picks[0]===picks[1]){o.col=o.alt[0];o.dark=o.alt[1];o.name+=' II'}return o}
 function resetF(f){Object.assign(f,{ultUsed:false,fl:0,upose:null,blockAt:0,counter:false,trail:[],x:f.id?660:300,y:GY,vx:0,vy:0,s:f.id?-1:1,hp:100,gh:100,en:0,st:'idle',t:0,cd:RI(20,40),hit:false,p:null,ph:0,wd:1,aid:0,seen:-1,used:false,dur:0})}
-const set=(f,st)=>{f.st=st;f.t=0;f.hit=false};
+const set=(f,st)=>{f.st=st;f.t=0;f.hit=false;f.hd=0};
 const idle=f=>set(f,'idle');
 
 /* ---------- poses ---------- */
@@ -171,7 +174,8 @@ const ST={
   hasso:[.05,8,-6,3,.5,.1,-.4,-.6],
   waki:[.2,2,30,-1.25,.6,.15,-.45,-.65],
   iai:[.35,0,32,-1.65,.9,.15,-.7,-1.1],
-  gedan:[.12,22,32,.85,.5,.1,-.35,-.55]
+  gedan:[.12,22,32,.85,.5,.1,-.35,-.55],
+  kasumi:[.05,12,-22,1.75,.5,.1,-.35,-.55]
 };
 const ATK={
   // four normal cuts, light to heavy
@@ -314,7 +318,22 @@ function streak(x0,x1,y,col){return{t:0,upd(){if(++this.t>26)this.dead=1},draw()
   ctx.fillRect(Math.min(x0,x1),y-9*a,Math.abs(x1-x0),18*a);ctx.fillStyle='#fff';ctx.fillRect(Math.min(x0,x1),y-1.5,Math.abs(x1-x0),3);
   for(let i=0;i<10;i++){const yy=y+(i-5)*14;ctx.globalAlpha=a*.5;ctx.fillRect(Math.min(x0,x1)+i*17%60,yy,Math.abs(x1-x0)*.7,1.5)}
   ctx.restore()}}}
+function thunder(f,o,tx,delay,dmg,w,stun,ult){return{t:0,upd(){this.t++;
+    if(this.t===delay){fxs.push({ty:'bolt',x:tx,y0:-80,y1:GY,col:f.col,t:0,life:14,w});flashFx(tx,GY-30,70*w);sparks(tx,GY-10,16*w,6*w);G.shake=Math.max(G.shake,7*w);
+      if(Math.abs(o.x-tx)<50*w&&o.y>GY-140){if(ult)ultHit(f,o,dmg,0,o.x,o.y-90);else if(skillHit(f,o,dmg,o.x,o.y-90,4,null)==='hit'&&stun)o.hd=stun}}
+    if(this.t>delay)this.dead=1},
+  draw(){if(this.t>=delay)return;const a=.4+.4*Math.sin(this.t*.8);ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=a;ctx.strokeStyle=f.col;ctx.lineWidth=2;
+    ctx.beginPath();ctx.ellipse(tx,GY+2,50*w,11*w,0,0,7);ctx.stroke();ctx.globalAlpha=a*.35;ctx.fillStyle=f.col;ctx.fillRect(tx-2,0,4,GY);ctx.restore()}}}
 const ULT={
+  storm(f,o,e){ // ชมพูนุทพิโรธ: calls the lightning down onto its own blade, then onto the foe
+    if(e===0){set(f,'ult');f.upose=RAISE;f.uk=.3;G.darkT=.93}
+    if(e===14){const tx=f.tipW?f.tipW[0]:f.x;fxs.push({ty:'bolt',x:tx,y0:-80,y1:f.tipW?f.tipW[1]:f.y-150,col:f.col,t:0,life:18,w:1.3});G.white=.55;G.shake=9;sparks(tx,f.y-150,30,8)}
+    if(e>=20&&e<34&&e%2===0)parts.push({x:f.x+R(-30,30),y:f.y-R(40,160),vx:R(-3,3),vy:R(-3,3),life:10,col:'#fff',r:R(1,2),sp:1});
+    if([34,42,50,58,66].includes(e))ufx.push(thunder(f,o,o.x+R(-12,12),1,4,1.1,0,1));
+    if(e===74){f.upose=ATK.men.A;f.uk=.5}
+    if(e===84){fxs.push({ty:'bolt',x:o.x,y0:-120,y1:GY,col:f.col,t:0,life:26,w:3.2});G.white=1;fxs.push({ty:'ring',x:o.x,y:GY,col:f.col,t:0,life:42,big:1});ultHit(f,o,16,1);f.upose=ATK.men.B;f.uk=.6}
+    return e>=118;
+  },
   dash(f,o,e){ // ชาดอัสดง: lunge straight through the target, delayed cuts bloom after
     if(e===0){set(f,'ult');f.upose=ATK.kesa.A;f.uk=.4}
     if(e===16){const x0=f.x,x1=clampX(o.x+f.s*120);ufx.push(streak(x0,x1,f.y-82,f.col));f.x=x1;f.upose=[.4,36,20,.5,...LL];f.uk=1;sparks(o.x,o.y-90,24,8);G.shake=10;G.hitstop=8}
@@ -419,6 +438,13 @@ function dropSword(f,o,x,delay,dmg,sc=1){return{x,y:-80-delay,t:0,upd(){if(!this
 function marker(x,col,life,rad=46){return{t:0,upd(){if(++this.t>life)this.dead=1},draw(){const a=.35+.35*Math.sin(this.t*.5);ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=a;
   ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,GY+2,rad,rad*.22,0,0,7);ctx.stroke();ctx.restore()}}}
 const SKILL={
+  storm:{name:'อัสนีแล่น',lead:12,want:d=>d<330?.3:0,run(f,o,t){ // a crackling arc from the blade that leaves the foe numb
+    if(t===1){f.upose=ATK.kesa.A;f.uk=.5}
+    if(t===12){f.upose=[.3,36,4,1.57,...LL];f.uk=1;
+      const x0=f.x+f.s*120,y0=f.y-96,inR=(o.x-f.x)*f.s>0&&Math.abs(o.x-f.x)<330,x1=inR?o.x:f.x+f.s*330;
+      fxs.push({ty:'zap',x0,y0,x1,y1:o.y-90,col:f.col,t:0,life:12,w:.9});G.shake=5;
+      if(inR&&skillHit(f,o,7,o.x,o.y-90,3,f.x)==='hit')o.hd=40}
+    return t>=28}},
   dash:{name:'ก้าวชาด',lead:14,want:d=>d<300?.3:0,run(f,o,t){ // a short version of the dashing cut
     if(t===1){f.upose=ATK.kesa.A;f.uk=.45}
     if(t===14){const x0=f.x,x1=clampX(o.x+f.s*70),reach=(o.x-x0)*f.s>-10&&(x1-o.x)*f.s>=0;
@@ -477,6 +503,11 @@ function blinkCut(f,o,side,dmg){
   if(r==='hit')slashFx(o.x,o.y-90,R(-1.2,1.2),f.col);if(r==='deflect'){set(f,'recoil');f.dur=26}return r;
 }
 const SKILL2={
+  storm:{name:'อัสนีบาตสามสาย',lead:24,want:d=>.32,run(f,o,t){ // three bolts, each aimed where the foe is now
+    if(t===1){f.upose=RAISE;f.uk=.35}
+    if(t===8||t===22||t===36)ufx.push(thunder(f,o,o.x+(t===8?0:R(-25,25)),16,8,1.25,26));
+    if(t===24||t===38){f.upose=RAISE;f.uk=.4}
+    return t>=56}},
   dash:{name:'สามก้าวสนธยา',lead:14,want:d=>d<320?.35:0,run(f,o,t){ // three dashes back and forth through the foe
     if(t===1){f.upose=ATK.kesa.A;f.uk=.5}
     if(t===14||t===32||t===50){const x0=f.x,side=o.x>f.x?1:-1,x1=clampX(o.x+side*80);
@@ -580,7 +611,8 @@ function update(f,o,think){
   switch(f.st){
     case 'skill':if((f.big?SKILL2:SKILL)[f.ult].run(f,o,f.t))idle(f);break;
     case 'block':case 'parry':case 'recoil':if(f.t>=f.dur)idle(f);break;
-    case 'hurt':if(f.t>=16&&f.y>=GY)idle(f);break;
+    case 'hurt':if(f.hd&&f.t%3===0)parts.push({x:f.x+R(-20,20),y:f.y-R(20,130),vx:R(-2,2),vy:R(-2,2),life:8,col:Math.random()<.5?'#fff':'#ff8fd0',r:R(1,2),sp:1});
+      if(f.t>=(f.hd||16)&&f.y>=GY)idle(f);break;
     case 'walk':f.vx=f.wd*f.spd;f.ph+=.2*f.wd*f.s;break;
   }
   f.vy+=.7;f.x+=f.vx;f.y+=f.vy;
@@ -694,6 +726,7 @@ function drawFighter(f){
     ctx.strokeStyle=rim;ctx.lineWidth=w+3;ctx.stroke();ctx.strokeStyle=body;ctx.lineWidth=w;ctx.stroke()};
   ctx.lineCap=ctx.lineJoin='round';
   const wv=Math.sin(G.f*.25+f.id)*4,hx=head[0],hy=head[1];
+  if(f.acc==='pony'){ctx.strokeStyle=rim;ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(hx-s*9,hy-8);ctx.quadraticCurveTo(hx-s*34,hy-10+wv,hx-s*36,hy+16+wv*1.4);ctx.quadraticCurveTo(hx-s*37,hy+30+wv*1.8,hx-s*30,hy+44+wv*2);ctx.stroke();ctx.strokeStyle='#1c1515';ctx.lineWidth=5;ctx.stroke();ctx.fillStyle='#1c1515';ctx.beginPath();ctx.arc(hx-s*11,hy-8,4,0,7);ctx.fill()}
   if(f.acc==='band'){ctx.strokeStyle='#1c1515';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(hx-s*10,hy-4);ctx.quadraticCurveTo(hx-s*24,hy-8+wv,hx-s*36,hy+wv*1.5);ctx.stroke()}
   if(f.acc==='scarf'){ctx.strokeStyle='#1c1515';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(neck[0],neck[1]+2);
     ctx.bezierCurveTo(neck[0]-s*20,neck[1]-4+wv,neck[0]-s*36,neck[1]+10-wv,neck[0]-s*60,neck[1]+4+wv*2);ctx.stroke()}
@@ -746,6 +779,18 @@ function drawFx(e){
     ctx.beginPath();ctx.moveTo(...out[0]);out.forEach(q=>ctx.lineTo(...q));inn.reverse().forEach(q=>ctx.lineTo(...q));ctx.fill();
     ctx.shadowBlur=0;ctx.globalAlpha=life;ctx.strokeStyle='#fff';ctx.lineWidth=2.5*life+.5;
     ctx.beginPath();out.slice(Math.floor(N*.25)).forEach((q,i)=>i?ctx.lineTo(...q):ctx.moveTo(...q));ctx.stroke();
+    ctx.restore();
+  }else if(e.ty==='bolt'||e.ty==='zap'){
+    const a=1-e.t/e.life,w=e.w||1,x0=e.ty==='bolt'?e.x+R(-26,26)*w:e.x0,y0=e.ty==='bolt'?e.y0:e.y0,x1=e.ty==='bolt'?e.x:e.x1,y1=e.ty==='bolt'?e.y1:e.y1;
+    const L=Math.hypot(x1-x0,y1-y0)||1,nx=-(y1-y0)/L,ny=(x1-x0)/L,n=14,pts=[[x0,y0]];
+    for(let i=1;i<n;i++){const u=i/n,o=R(-20,20)*w*(1-Math.abs(u-.5));pts.push([x0+(x1-x0)*u+nx*o,y0+(y1-y0)*u+ny*o])}pts.push([x1,y1]);
+    ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=Math.min(1,a*1.6);ctx.lineJoin='round';
+    const path=()=>{ctx.beginPath();ctx.moveTo(...pts[0]);pts.forEach(q=>ctx.lineTo(...q))};
+    ctx.shadowColor=e.col;ctx.shadowBlur=30;path();ctx.strokeStyle=e.col;ctx.lineWidth=7*w*a+2;ctx.stroke();
+    ctx.shadowBlur=0;path();ctx.strokeStyle='#fff';ctx.lineWidth=2.6*w*a+1;ctx.stroke();
+    ctx.strokeStyle=e.col;ctx.lineWidth=1.5*w;
+    for(let k=0;k<3;k++){let q=pts[RI(3,n-3)];ctx.beginPath();ctx.moveTo(...q);for(let j=0;j<4;j++){q=[q[0]+R(-18,18)*w+nx*R(-10,10),q[1]+R(4,16)*(e.ty==='bolt'?1:R(-1,1))];ctx.lineTo(...q)}ctx.stroke()}
+    const g=ctx.createRadialGradient(x1,y1,0,x1,y1,70*w);g.addColorStop(0,'rgba(255,255,255,'+.8*a+')');g.addColorStop(.4,e.col+'88');g.addColorStop(1,e.col+'00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x1,y1,70*w,0,7);ctx.fill();
     ctx.restore();
   }else if(e.ty==='ring'){
     const u=e.t/e.life,rx=(e.big?30:12)+u*(e.big?420:190),a=1-u;ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=a;
