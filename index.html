@@ -178,7 +178,6 @@ const ATK={
   kiriage:{w:12,sf:3,hold:8,end:33,rg:128,dmg:[9,11],kb:6,hv:1,lunge:3,aw:1.15,A:[.2,-4,30,-.9,.6,.15,-.45,-.65],B:[.1,28,-24,2.8,.9,.3,-.55,-.75]},
   men:{w:18,sf:4,hold:10,end:44,rg:142,dmg:[13,16],kb:9,hv:1,lunge:7,aw:1.5,A:[-.2,0,-42,4.1,.45,.1,-.3,-.5],B:[.5,36,8,1.25,1.05,.4,-.7,-.9]},
   airslash:{w:5,sf:4,hold:999,end:9999,rg:120,dmg:[9,11],kb:6,hv:1,lunge:0,A:[0,2,-36,3.9,1.15,-.15,.35,-.7],B:[.4,32,16,.5,1,-.2,.5,-.6]},
-  special:{w:22,sf:4,hold:10,end:46,rg:0,lunge:2,A:[-.2,0,-40,4.1,.45,.1,-.3,-.5],B:[.45,36,6,1,1,.4,-.65,-.85]}
 };
 const ease=x=>1-Math.pow(1-Math.min(1,x),3);
 const active=f=>{const A=ATK[f.st];return !!A&&A.rg>0&&f.t>=A.w&&f.t<A.w+A.sf+2};
@@ -199,7 +198,7 @@ function target(f){
     case 'hurt':return [P(-.5,12,24,1.1,.3,.05,-.45,-.5),.45];
     case 'ko':return [P(-.3,8,30,.9,.3,.25,.05,0,-1.5),.2];
     case 'ultpose':return [P(0,14,36,.9,.2,.05,-.2,-.3),.1];
-    case 'ult':return [P(...f.upose),f.uk||.35];
+    case 'ult':case 'skill':return [P(...f.upose),f.uk||.35];
     case 'win':return [P(0,2,-52,Math.PI,.25,.1,-.25,-.25),.15];
     default:return [P(q[0]+b,q[1],q[2]+b*20,q[3]+b,q[4],q[5],q[6],q[7]+b),.22];
   }
@@ -222,6 +221,13 @@ function arcFx(f,A){
 }
 
 /* ---------- combat ---------- */
+function deflect(o,cx,cy){
+  o.hp=Math.min(100,o.hp+5);o.gh=Math.max(o.gh,o.hp);o.en=Math.min(100,o.en+30);
+  set(o,'parry');o.dur=14;o.counter=true;
+  sparks(cx,cy,70,11);flashFx(cx,cy,90);
+  pop(cx,cy-26,'Deflect!',o.col,1);pop(o.x,o.y-185,'+5 เลือด  +มานา','#8dffb0');
+  G.hitstop=13;G.shake=8;
+}
 function strike(f,o,A){
   if(o.st==='ko')return;
   const dx=(o.x-f.x)*f.s;
@@ -236,12 +242,7 @@ function strike(f,o,A){
   if((o.st==='block'||o.st==='parry')&&o.s===-f.s){
     const cx=o.x+o.s*34,cy=o.y-104;
     if(o.st==='block'&&o.t<=7){
-      o.hp=Math.min(100,o.hp+5);o.gh=Math.max(o.gh,o.hp);o.en=Math.min(100,o.en+30);
-      set(o,'parry');o.dur=14;o.counter=true;
-      set(f,'recoil');f.dur=28;f.vx=-f.s*6;
-      sparks(cx,cy,70,11);flashFx(cx,cy,90);
-      pop(cx,cy-26,'Deflect!',o.col,1);pop(o.x,o.y-185,'+5 เลือด  +พลัง','#8dffb0');
-      G.hitstop=13;G.shake=8;o.parries=(o.parries||0)+1;return;
+      deflect(o,cx,cy);set(f,'recoil');f.dur=28;f.vx=-f.s*6;return;
     }
     const d=Math.max(1,Math.round(dmg*.15));o.hp=Math.max(0,o.hp-d);o.vx=f.s*A.kb*.9;
     sparks(cx,cy,24,6);pop(cx,cy-18,'ปัด','#fff3c2');
@@ -379,6 +380,85 @@ const ULT={
   }
 };
 
+/* ---------- skills: one small move per sword, echoing its ultimate ---------- */
+const MANA=100/3;
+function castSkill(f,o){
+  f.en-=MANA;f.aid++;f.blockAt=0;f.s=o.x>f.x?1:-1;set(f,'skill');f.vx=0;f.upose=ST[f.stance||'chudan'];f.uk=.35;
+  const S=SKILL[f.ult];pop(f.x,f.y-165,S.name,f.col,1);
+}
+function skillHit(f,o,d,x,y,kb,from){
+  if(o.st==='ko'||G.ult)return 'miss';
+  x=x??o.x;y=y??o.y-90;const dir=Math.sign(o.x-(from??f.x))||f.s;
+  const facing=from==null||o.s===Math.sign(from-o.x);
+  if((o.st==='block'||o.st==='parry')&&facing){
+    if(o.st==='block'&&o.t<=7){deflect(o,x,y);return 'deflect'}
+    const c=Math.max(1,Math.round(d*.15));o.hp=Math.max(0,o.hp-c);o.vx=dir*3;
+    sparks(x,y,24,6);pop(x,y-18,'ปัด','#fff3c2');G.hitstop=5;if(o.hp<=0)ko(f,o);return 'block';
+  }
+  d=Math.round(d*f.pow);o.hp=Math.max(0,o.hp-d);set(o,'hurt');o.vx=dir*(kb||6);o.vy=-4;
+  burst(x,y,'#fff',10,5);burst(x,y,f.col,14,4);pop(x+R(-10,10),y-16,'-'+d,'#fff');
+  G.hitstop=6;G.shake=6;o.en=Math.min(100,o.en+d*2);
+  if(o.hp<=0)ko(f,o);return 'hit';
+}
+function bolt(f,o,x,y,dir,dmg,sc){return{x,y,t:0,upd(){this.x+=dir*15;this.t++;
+    if(this.t%2)parts.push({x:this.x-dir*24,y:this.y+R(-24,24),vx:-dir*R(2,4),vy:0,life:12,col:'#fff',r:R(1,2),fl:1});
+    if((o.x-this.x)*dir<18&&Math.abs(o.y-90-this.y)<70){skillHit(f,o,dmg,this.x,this.y,6,this.x-dir*40);this.dead=1}
+    if(this.x<-60||this.x>W+60||this.t>90)this.dead=1},
+  draw(){ctx.save();ctx.translate(this.x,this.y);ctx.scale(dir*sc,sc);ctx.globalCompositeOperation='lighter';ctx.shadowColor=f.col;ctx.shadowBlur=20;ctx.fillStyle=f.col;
+    ctx.beginPath();ctx.arc(-14,0,40,-1.25,1.25);ctx.arc(-34,0,38,1.1,-1.1,true);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(-14,0,39,-1,1);ctx.stroke();ctx.restore()}}}
+function dropSword(f,o,x,delay,dmg){return{x,y:-80-delay,t:0,upd(){if(!this.hit){this.y+=24;if(this.y>=GY-40){this.hit=1;sparks(this.x,GY-40,10,5);
+      if(Math.abs(o.x-this.x)<42)skillHit(f,o,dmg,this.x,GY-80,3,null)}}else if(++this.t>14)this.dead=1},
+  draw(){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=this.hit?1-this.t/14:1;ctx.shadowColor=f.col;ctx.shadowBlur=16;ctx.strokeStyle=f.col;ctx.lineWidth=4;
+    ctx.beginPath();ctx.moveTo(this.x,this.y-80);ctx.lineTo(this.x,this.y);ctx.stroke();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(this.x-8,this.y-68);ctx.lineTo(this.x+8,this.y-68);ctx.stroke();ctx.restore()}}}
+function marker(x,col,life){return{t:0,upd(){if(++this.t>life)this.dead=1},draw(){const a=.35+.35*Math.sin(this.t*.5);ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=a;
+  ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,GY+2,46,10,0,0,7);ctx.stroke();ctx.restore()}}}
+const SKILL={
+  dash:{name:'ก้าวชาด',lead:14,want:d=>d<300?.3:0,run(f,o,t){ // a short version of the dashing cut
+    if(t===1){f.upose=ATK.kesa.A;f.uk=.45}
+    if(t===14){const x0=f.x,x1=clampX(o.x+f.s*70),reach=(o.x-x0)*f.s>-10&&(x1-o.x)*f.s>=0;
+      ufx.push(streak(x0,x1,f.y-82,f.col));f.x=x1;f.upose=[.4,36,20,.5,...LL];f.uk=1;
+      if(reach&&skillHit(f,o,10,o.x,o.y-90,7,x0)==='deflect'){set(f,'recoil');f.dur=26}
+      else if(reach)slashFx(o.x,o.y-90,-.6*f.s,f.col)}
+    return t>=34}},
+  rain:{name:'ดาบฟ้าร่วง',lead:26,want:d=>d>90?.3:.08,run(f,o,t){ // three falling blades on the spot the foe stands
+    if(t===1){f.upose=RAISE;f.uk=.35}
+    if(t===12){const tx=o.x;ufx.push(marker(tx,f.col,30));[-34,0,34].forEach((dx,k)=>ufx.push(dropSword(f,o,tx+dx,k*40+50,4)))}
+    return t>=30}},
+  wind:{name:'ลมหยกเฉือน',lead:18,want:d=>d>110?.35:.05,run(f,o,t){ // a single razor wind crescent
+    if(t===1){f.upose=ATK.kesa.A;f.uk=.5}
+    if(t===10){f.upose=ATK.kesa.B;f.uk=1;arcFx(f,ATK.kesa);ufx.push(bolt(f,o,f.x+f.s*50,f.y-92,f.s,9,1.1))}
+    return t>=28}},
+  meteor:{name:'อำพันร่วง',lead:40,want:d=>d>100?.3:.06,run(f,o,t){ // a small ember falls where the foe stands
+    if(t===1){f.upose=RAISE;f.uk=.35}
+    if(t===10){const tx=o.x,x0=tx-f.s*140,y0=60;ufx.push(marker(tx,f.col,40));
+      ufx.push({t:0,x:x0,y:y0,upd(){this.t++;const u=Math.min(1,this.t/38),q=u*u;this.x=x0+(tx-x0)*q;this.y=y0+(GY-40-y0)*q;
+        if(this.t<38)parts.push({x:this.x+R(-10,10),y:this.y+R(-10,10),vx:R(-.5,.5),vy:-R(1,2),life:RI(12,22),col:Math.random()<.5?'#ffcf5a':f.col,r:R(2,4),fl:1});
+        if(this.t===38){flashFx(tx,GY-40,120);fxs.push({ty:'ring',x:tx,y:GY,col:f.col,t:0,life:30});G.shake=10;
+          for(let i=0;i<30;i++){const a=R(Math.PI,Math.PI*2),v=R(2,8);parts.push({x:tx,y:GY-10,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:RI(16,30),col:Math.random()<.5?'#ff8a2a':f.col,r:R(2,4)})}
+          if(Math.abs(o.x-tx)<70)skillHit(f,o,12,o.x,GY-60,8,null)}
+        if(this.t>40)this.dead=1},
+        draw(){if(this.t>=38)return;const r=16+10*Math.min(1,this.t/38),g=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,r*1.8);g.addColorStop(0,'#fff');g.addColorStop(.3,'#ffe08a');g.addColorStop(.6,f.col);g.addColorStop(1,f.col+'00');
+          ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.beginPath();ctx.arc(this.x,this.y,r*1.8,0,7);ctx.fill();ctx.restore()}})}
+    if(t===40){f.upose=ATK.men.B;f.uk=.5}
+    return t>=44}},
+  iai:{name:'พริบทอง',lead:16,want:d=>.25,run(f,o,t){ // blink behind the foe with one golden draw
+    if(t===1){f.upose=IAI;f.uk=.45}
+    if(t===16){const x0=f.x,side=o.x>f.x?1:-1,x1=clampX(o.x+side*80);G.white=.45;ufx.push(streak(x0,x1,f.y-70,f.col));f.x=x1;
+      f.upose=[.3,34,18,1.3,...LL];f.uk=1;
+      const r=skillHit(f,o,9,o.x,o.y-90,6,x1);if(r==='hit')slashFx(o.x,o.y-90,R(-1,1),f.col);if(r==='deflect'){set(f,'recoil');f.dur=26}}
+    if(t===26){f.s=o.x>f.x?1:-1;f.upose=IAI;f.uk=.3}
+    return t>=36}},
+  petal:{name:'กลีบราตรี',lead:22,want:d=>d>80?.3:.1,run(f,o,t){ // a brief whirl of night petals around the foe
+    if(t===1){f.upose=RAISE;f.uk=.35}
+    if(t===10)for(let i=0;i<26;i++){const a0=R(0,6.28),r0=R(50,90),sp=R(.12,.2),rot=R(0,6);
+      ufx.push({t:0,x:o.x,y:o.y-85,upd(){this.t++;const a=a0+this.t*sp,r=r0*(1-this.t/70);this.x=o.x+Math.cos(a)*r;this.y=o.y-85+Math.sin(a)*r*.5;if(this.t>48)this.dead=1},
+        draw(){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=this.t>38?(48-this.t)/10:1;ctx.translate(this.x,this.y);ctx.rotate(rot+this.t*.2);ctx.shadowColor=f.col;ctx.shadowBlur=8;
+          ctx.fillStyle=f.col;ctx.beginPath();ctx.ellipse(0,0,6,2.8,0,0,7);ctx.fill();ctx.restore()}})}
+    if(t===22||t===34||t===46)skillHit(f,o,3,o.x,o.y-85,2,null);
+    return t>=48}}
+};
+
 /* ---------- AI ---------- */
 function brain(f,o){
   if(!['idle','walk','air'].includes(f.st))return;
@@ -388,12 +468,12 @@ function brain(f,o){
     return;
   }
   if(f.en>=100&&f.hp<40&&!f.ultUsed&&o.st!=='ko'&&f.y>=GY){startUlt(f,o);return}
-  const A=ATK[o.st],melee=A&&A.rg>0&&d<210&&o.t<A.w;
+  const A=ATK[o.st],melee=(A&&A.rg>0&&d<210&&o.t<A.w)||(o.st==='skill'&&o.t<10);
   const pr=projs.find(p=>p.o!==f&&Math.sign(f.x-p.x)===Math.sign(p.vx)&&Math.abs(f.x-p.x)<260);
   if((melee||pr)&&f.seen!==o.aid){
     f.seen=o.aid;const r=Math.random();
     if(r<f.pb){
-      const lead=melee?A.w-o.t:Math.max(1,Math.round((Math.abs(f.x-pr.x)-30)/8));
+      const lead=melee?(A?A.w-o.t:SKILL[o.ult].lead-o.t):Math.max(1,Math.round((Math.abs(f.x-pr.x)-30)/8));
       f.blockAt=G.f+Math.max(0,RI(-6,lead-1));f.blockDur=30;
     }else if(r<f.pb+f.agi){jump(f,pr?dir:-dir);return}
   }
@@ -403,7 +483,7 @@ function brain(f,o){
   if(f.counter){f.counter=false;if(d<150){atk(Math.random()<.5?'flick':'kesa');return}}
   if(f.cd>0){f.cd--;if(f.st==='walk'&&f.wd===dir&&d<125)idle(f);return}
   const r=Math.random();
-  if(f.en>=100&&(f.hp>=40||f.ultUsed)&&(d>170?r<.7:r<.06)){atk('special');f.en=0;return}
+  if(f.en>=MANA&&(f.ultUsed||f.hp>=50||f.en>=100)&&r<SKILL[f.ult].want(d)){castSkill(f,o);return}
   if(d>135){
     if(d<290&&r<f.jumpy){jump(f,dir);return}
     f.st='walk';f.wd=dir;f.cd=RI(10,30);return;
@@ -421,11 +501,12 @@ function update(f,o,think){
   if(think)brain(f,o);
   const A=ATK[f.st];
   if(A){
-    if(f.t===A.w){if(A.lunge)f.vx=f.s*A.lunge;arcFx(f,A);if(f.st==='special')fire(f)}
+    if(f.t===A.w){if(A.lunge)f.vx=f.s*A.lunge;arcFx(f,A)}
     if(active(f)&&!f.hit)strike(f,o,A);
     if(ATK[f.st]&&f.t>=A.end)idle(f);
   }
   switch(f.st){
+    case 'skill':if(SKILL[f.ult].run(f,o,f.t))idle(f);break;
     case 'block':case 'parry':case 'recoil':if(f.t>=f.dur)idle(f);break;
     case 'hurt':if(f.t>=16&&f.y>=GY)idle(f);break;
     case 'walk':f.vx=f.wd*f.spd;f.ph+=.2*f.wd*f.s;break;
@@ -439,7 +520,7 @@ function update(f,o,think){
   f.x=Math.max(30,Math.min(W-30,f.x));
   if(f.y>=GY&&['idle','walk','block'].includes(f.st))f.s=o.x>f.x?1:-1;
   if(f.gh>f.hp)f.gh=Math.max(f.hp,f.gh-.5);
-  if(G.phase==='fight')f.en=Math.min(100,f.en+.03);
+  if(G.phase==='fight')f.en=Math.min(100,f.en+.05);
 }
 
 /* ---------- flow ---------- */
@@ -631,9 +712,10 @@ function hud(){
     const ew=w*.6,ex=i?x+w-ew:x;ctx.fillStyle='#120a07cc';ctx.fillRect(ex,y+32,ew,8);
     const full=f.en>=100;ctx.fillStyle=full?(G.f%16<8?'#ffc94a':'#fff3c2'):'#ffc94a99';
     ctx.fillRect(i?ex+ew-ew*f.en/100:ex,y+32,ew*f.en/100,8);
+    ctx.fillStyle='#120a07';for(const q of [1/3,2/3])ctx.fillRect(ex+ew*q-1,y+31,2,10);
     ctx.font='600 20px Kanit, sans-serif';ctx.textAlign=i?'right':'left';ctx.textBaseline='top';
     ctx.fillStyle='#120a07';ctx.fillText(f.name,(i?x+w:x)+2,y+46);ctx.fillStyle='#f6eadb';ctx.fillText(f.name,i?x+w:x,y+44);const nw=ctx.measureText(f.name).width;
-    if(full){ctx.font='600 13px Kanit, sans-serif';ctx.fillStyle='#ffc94a';ctx.fillText('พลังเต็ม',i?ex-8-ctx.measureText('พลังเต็ม').width*0:ex+ew+8,y+29);}
+    if(full){ctx.font='600 13px Kanit, sans-serif';ctx.fillStyle='#ffc94a';ctx.fillText('มานาเต็ม',i?ex-8:ex+ew+8,y+29);}
     for(let r=0;r<2;r++){const px=i?x+w-nw-22-r*20:x+nw+22+r*20;
       ctx.beginPath();ctx.arc(px,y+57,7,0,7);ctx.fillStyle=f.wins>r?'#ffc94a':'#120a07aa';ctx.fill();ctx.strokeStyle='#ffc94a';ctx.lineWidth=1.5;ctx.stroke()}
   });
