@@ -279,6 +279,28 @@ function shing(t,base,dur,peak,o={}){ // bright, sharp katana "tsching": high in
   if(o.sparkle)tone(t,'sine',base*3.3,base*3.25,dur*.5,peak*.12,SFXG,1,.001);
   if(o.slide)nz(t+.005,{f:[[0,4800],[o.slide,9500]],q:14,a:.008,h:o.slide*.4,d:o.slide,peak:peak*.32,rev:1});
 }
+let SHAPER=null;
+function clang(t,base,dur,peak,o={}){ // steel on steel: gritty impact, noise-excited ringing modes, ring-modulated shimmer, two-stage decay
+  if(!SHAPER){SHAPER=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/511.5-1;SHAPER[i]=Math.tanh(x*6)}}
+  const out=AC.createGain();out.gain.value=1;out.connect(SFXG);if(o.rev!==0){const rs=AC.createGain();rs.gain.value=.7;out.connect(rs);rs.connect(REV)}
+  // 1) crunchy contact: short noise through a waveshaper
+  {const src=AC.createBufferSource();src.buffer=NOISE;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=o.crunch||3200;bp.Q.value=.8;
+   const ws=AC.createWaveShaper();ws.curve=SHAPER;const g=AC.createGain();g.gain.setValueAtTime(peak*.55,t);g.gain.exponentialRampToValueAtTime(.0001,t+.035);
+   src.connect(bp);bp.connect(ws);ws.connect(g);g.connect(out);src.start(t,Math.random()*.5);src.stop(t+.05)}
+  // 2) decaying noise into a bank of narrow resonators: metallic ring with grain, not a clean glassy tone
+  {const src=AC.createBufferSource();src.buffer=NOISE;src.loop=true;const ex=AC.createGain();
+   ex.gain.setValueAtTime(.0001,t);ex.gain.exponentialRampToValueAtTime(1,t+.002);ex.gain.exponentialRampToValueAtTime(.28,t+.045);ex.gain.exponentialRampToValueAtTime(.0001,t+dur);
+   src.connect(ex);
+   [1,1.38,1.79,2.21,2.67,3.19,3.74,4.41,5.2].forEach((r,i)=>{const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=base*r*R(.985,1.015);bp.Q.value=o.q||45;
+     const g=AC.createGain();g.gain.value=peak*(o.q?Math.sqrt(o.q):6.7)*1.35/(1+i*.28);ex.connect(bp);bp.connect(g);g.connect(out)});
+   src.start(t,Math.random()*.5);src.stop(t+dur+.05)}
+  // 3) ring modulation: inharmonic sidebands that read as "metal"
+  {const c=AC.createOscillator(),m=AC.createOscillator(),rm=AC.createGain(),g=AC.createGain();c.type='sine';m.type='sine';
+   c.frequency.setValueAtTime(base*1.62,t);c.frequency.exponentialRampToValueAtTime(base*1.58,t+dur);m.frequency.value=base*.737;rm.gain.value=0;m.connect(rm.gain);c.connect(rm);
+   g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(peak*.35,t+.002);g.gain.exponentialRampToValueAtTime(peak*.08,t+.05);g.gain.exponentialRampToValueAtTime(.0001,t+dur*.7);
+   rm.connect(g);g.connect(out);c.start(t);m.start(t);c.stop(t+dur);m.stop(t+dur)}
+  if(o.slide)nz(t+.01,{f:[[0,3800],[o.slide,8000]],q:6,a:.01,h:o.slide*.5,d:o.slide,peak:peak*.35,rev:1});
+}
 function thump(t,f,dur,peak){const o=AC.createOscillator();o.type='sine';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f*.45,t+dur);
   const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=f*3;const g=AC.createGain();env(g,t,.003,peak,dur);o.connect(lp);lp.connect(g);g.connect(SFXG);o.start(t);o.stop(t+dur+.05)}
 const SFX={
@@ -295,13 +317,13 @@ const SFX={
     thump(t,h?95:120,h?.24:.15,h?.75:.5);
   },
   crit(){const t=AC.currentTime;this.hit(1);nz(t,{type:'lowpass',f:[[0,700],[.6,80]],q:.7,d:.6,peak:.7,rev:1});thump(t,70,.5,.9);nz(t+.01,{f:[[0,2500],[.2,6000]],q:6,d:.22,peak:.2,rev:1})},
-  clash(){ // both blades swinging: two shings a hair apart plus a heavier body
-    const t=AC.currentTime,b=R(2100,2400);shing(t,b,.9,.55,{sparkle:1});shing(t+R(.008,.018),b*R(1.12,1.2),.7,.4,{click:9000});
-    nz(t,{type:'lowpass',f:[[0,1200],[.12,300]],d:.12,peak:.4});
+  clash(){ // both blades at full swing: two clangs a hair apart and a heavy body
+    const t=AC.currentTime,b=R(1500,1750);clang(t,b,.9,.9,{crunch:2600});clang(t+R(.01,.02),b*R(1.25,1.35),.7,.6,{crunch:4200});
+    nz(t,{type:'lowpass',f:[[0,1100],[.15,250]],d:.15,peak:.45});
   },
-  block(){const t=AC.currentTime;shing(t,R(1900,2200),.32,.38,{click:6000,rev:0});nz(t,{type:'lowpass',f:[[0,1000],[.08,250]],d:.08,peak:.3})},
-  deflect(){ // the clean parry: sharpest and brightest, with a short blade slide
-    const t=AC.currentTime;shing(t,R(2500,2800),.85,.62,{sparkle:1,slide:.16,click:9000});
+  block(){const t=AC.currentTime;clang(t,R(1300,1500),.38,.8,{rev:0,q:30});nz(t,{type:'lowpass',f:[[0,1000],[.08,250]],d:.08,peak:.3})},
+  deflect(){ // the clean parry: sharp steel "tching" with a short scrape of blade on blade
+    const t=AC.currentTime;clang(t,R(1900,2150),.75,1.05,{crunch:4500,slide:.14});
   },
   cast(big){const t=AC.currentTime;nz(t,{f:[[0,400],[big?.6:.35,2400]],q:3,a:big?.4:.22,d:.3,peak:big?.4:.38,rev:1});
     nz(t,{type:'lowpass',f:[[0,200],[.5,500]],q:1,a:.2,d:.4,peak:big?.45:.35});if(big)steel(t+.25,R(420,460),1.6,.18,1,.6)},
