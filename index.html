@@ -56,6 +56,7 @@ body:not(.picking) .bar{max-width:max(560px,calc((100dvh - 96px)*16/9));margin-i
 .ms{display:grid;grid-template-columns:2.4em minmax(0,1fr);gap:2px 6px;align-items:center;font-size:12px;margin-top:6px;color:var(--mute)}
 .ms .meter{height:5px}
 .go{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.snd{display:flex;gap:8px;margin:-6px 0 16px;flex-wrap:wrap}.snd button{min-height:40px;font-size:15px;padding:0 14px}
 .hpm{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap}.hpm span{color:var(--mute);margin-right:4px}.hpm button{min-width:64px}
 .go .big{background:var(--gold);color:#1a120c;border-color:var(--gold);font-size:18px;padding:0 32px}
 body.picking .bar,body.picking .cards,body.picking #bet{display:none}
@@ -89,6 +90,7 @@ h2{font:600 20px Kanit,sans-serif;margin:26px 0 8px}
 <div class="wrap">
 <h1>ศึกสติ๊กแมน 1 ต่อ 1</h1>
 <p class="sub">สองนักดาบควบคุมโดย AI ดวลคาตานะกันเอง แข่งชนะ 2 ใน 3 ยก คุณแค่นั่งดู หรือจะทายผู้ชนะก่อนก็ได้</p>
+<div class="snd"><button id="sndBtn"></button><button id="musBtn"></button></div>
 <div class="stage"><canvas id="cv" aria-label="สนามต่อสู้สติ๊กแมน"></canvas>
 <button id="fsx">ออกจากเต็มจอ</button>
 <div id="ready" hidden><p>ทายผู้ชนะด้านล่างก่อนได้เลย</p><button id="go">เริ่มสู้!</button></div>
@@ -106,7 +108,7 @@ h2{font:600 20px Kanit,sans-serif;margin:26px 0 8px}
 <div class="bar">
   <button id="pause">หยุดชั่วคราว</button>
   <div class="grp" role="group" aria-label="ความเร็ว">
-    <button data-sp="0.5">ช้า 0.5×</button><button data-sp="1" class="on">ปกติ 1×</button><button data-sp="2">เร็ว 2×</button>
+    <button data-sp="0.5">ช้า 0.5×</button><button data-sp="1">ปกติ 1×</button><button data-sp="2" class="on">เร็ว 2×</button>
   </div>
   <span class="spacer"></span>
   <button id="fs" hidden>เต็มจอ</button>
@@ -225,24 +227,89 @@ function target(f){
   }
 }
 
+/* ---------- sound: synthesized with Web Audio, no files ---------- */
+const SND={on:true,music:true};try{const v=JSON.parse(localStorage.getItem('sd-snd')||'{}');Object.assign(SND,v)}catch(e){}
+let AC=null,OUT,SFXG,MUSG,REV,NOISE;const lastPlay={};
+function initAudio(){
+  if(AC){if(AC.state==='suspended')AC.resume();return}
+  try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return}
+  OUT=AC.createDynamicsCompressor();OUT.connect(AC.destination);
+  const master=AC.createGain();master.gain.value=.8;master.connect(OUT);
+  SFXG=AC.createGain();SFXG.gain.value=SND.on?1:0;SFXG.connect(master);
+  MUSG=AC.createGain();MUSG.gain.value=SND.music?.32:0;MUSG.connect(master);
+  NOISE=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);const d=NOISE.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  REV=AC.createConvolver();const L=AC.sampleRate*1.8,ir=AC.createBuffer(2,L,AC.sampleRate);
+  for(let c=0;c<2;c++){const ch=ir.getChannelData(c);for(let i=0;i<L;i++)ch[i]=(Math.random()*2-1)*Math.pow(1-i/L,3)}
+  REV.buffer=ir;const rg=AC.createGain();rg.gain.value=.35;REV.connect(rg);rg.connect(master);
+  setInterval(musicTick,40);
+}
+['pointerdown','keydown','touchstart'].forEach(ev=>addEventListener(ev,initAudio,{passive:true}));
+function env(g,t,a,peak,dec){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(0.0001,t+a+dec)}
+function noise(t,dur,type,f0,f1,peak,q=1,dest=SFXG,rev=0){
+  const src=AC.createBufferSource();src.buffer=NOISE;src.loop=true;const fl=AC.createBiquadFilter();fl.type=type;fl.Q.value=q;
+  fl.frequency.setValueAtTime(f0,t);fl.frequency.exponentialRampToValueAtTime(Math.max(30,f1),t+dur);
+  const g=AC.createGain();env(g,t,.005,peak,dur);src.connect(fl);fl.connect(g);g.connect(dest);if(rev)g.connect(REV);src.start(t,Math.random()*.5);src.stop(t+dur+.05);
+}
+function tone(t,type,f0,f1,dur,peak,dest=SFXG,rev=0,att=.004){
+  const o=AC.createOscillator();o.type=type;o.frequency.setValueAtTime(f0,t);if(f1!==f0)o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
+  const g=AC.createGain();env(g,t,att,peak,dur);o.connect(g);g.connect(dest);if(rev)g.connect(REV);o.start(t);o.stop(t+att+dur+.05);
+}
+function metal(t,parts,dur,peak,rev){parts.forEach((p,i)=>tone(t,'sine',p,p*.995,dur*(1-i*.12),peak/(1+i*.6),SFXG,rev,.002))}
+const SFX={
+  slash(w=1){noise(AC.currentTime,.1+.06*w,'bandpass',3200,700,.35+.2*w,1.4)},
+  hit(h){const t=AC.currentTime;tone(t,'sine',h?150:190,45,h?.22:.14,h?.9:.6);noise(t,.07,'lowpass',2200,500,.5)},
+  crit(){const t=AC.currentTime;tone(t,'sine',120,35,.35,1);noise(t,.18,'lowpass',3000,300,.7,1,SFXG,1);tone(t,'sawtooth',900,120,.25,.18)},
+  clash(){const t=AC.currentTime;metal(t,[1240,1870,2650,3330],.7,.38,1);noise(t,.04,'highpass',4000,3000,.6)},
+  block(){const t=AC.currentTime;metal(t,[1500,2300],.22,.25,0);noise(t,.03,'highpass',3500,3000,.35)},
+  deflect(){const t=AC.currentTime;metal(t,[1700,2550,3400,4260],1.1,.45,1);tone(t+.04,'triangle',880,1760,.25,.15,SFXG,1)},
+  cast(big){const t=AC.currentTime;tone(t,'sine',big?220:330,big?880:990,big?.45:.25,.25,SFXG,1);if(big){tone(t,'triangle',330,1320,.5,.12,SFXG,1);noise(t,.5,'bandpass',600,3000,.18,2,SFXG,1)}},
+  dash(){noise(AC.currentTime,.28,'bandpass',600,4000,.45,1.2)},
+  thunder(){const t=AC.currentTime;noise(t,.08,'highpass',3000,2000,.8);noise(t,1.2,'lowpass',1800,120,.8,.7,SFXG,1);tone(t,'sine',70,30,.8,.6)},
+  fire(big){noise(AC.currentTime,big?.6:.3,'lowpass',big?1400:900,200,big?.5:.3,.8)},
+  boom(){const t=AC.currentTime;noise(t,1.4,'lowpass',900,60,1,.7,SFXG,1);tone(t,'sine',80,28,1,1)},
+  ult(){const t=AC.currentTime;tone(t,'sawtooth',55,55,2.2,.22,SFXG,1,.6);tone(t,'sine',110,110,2.2,.2,SFXG,1,.8);tone(t+.3,'triangle',880,1760,1.4,.06,SFXG,1,.5);noise(t,2,'bandpass',300,2400,.15,3,SFXG,1)},
+  ko(){const t=AC.currentTime;this.boom();metal(t+.05,[196,392,588,790],2.4,.4,1)},
+  beep(){tone(AC.currentTime,'square',660,660,.12,.12)},
+  gong(){const t=AC.currentTime;metal(t,[147,294,441,622,830],2.6,.5,1);tone(t,'sine',73,73,2.6,.35,SFXG,1)},
+  heal(){const t=AC.currentTime;tone(t,'sine',660,990,.25,.15,SFXG,1)}
+};
+function sfx(n,...a){if(!AC||!SND.on||document.hidden)return;const now=AC.currentTime;if(lastPlay[n]&&now-lastPlay[n]<.035)return;lastPlay[n]=now;try{SFX[n](...a)}catch(e){}}
+/* music: taiko + plucked "in" scale over a drone */
+const SCALE=[293.66,311.13,392,440,466.16,587.33,622.25,783.99];let mNext=0,mStep=0,mNote=3,droneOn=0;
+function musicTick(){
+  if(!AC||!SND.music)return;const spb=60/92/2;if(mNext<AC.currentTime)mNext=AC.currentTime+.05;
+  const ultDuck=G.ult?.25:1,pick=document.body.classList.contains('picking')?.55:1;
+  MUSG.gain.setTargetAtTime((SND.music?.32:0)*ultDuck*pick,AC.currentTime,.3);
+  while(mNext<AC.currentTime+.15){
+    const t=mNext,st=mStep%32,bar=Math.floor(mStep/16)%4;
+    if([0,3,6,8,11,14].includes(st%16)){tone(t,'sine',st%16===0?90:70,38,st%16===0?.5:.3,st%16===0?.9:.55,MUSG)}
+    if(st%4===2)noise(t,.05,'bandpass',3500,2500,.12,4,MUSG);
+    if(st%16===12&&bar===3)for(let k=0;k<3;k++)tone(t+k*spb/3,'sine',110,40,.18,.4,MUSG);
+    if(st%2===0&&Math.random()<(st%8===0?.9:.45)){mNote=Math.max(0,Math.min(SCALE.length-1,mNote+[-2,-1,-1,1,1,2][Math.floor(Math.random()*6)]));
+      const f=SCALE[mNote]*(bar===2?1:1);tone(t,'triangle',f,f*.998,.5,.13,MUSG,1,.002);tone(t,'sawtooth',f*2,f*2,.12,.025,MUSG,0,.002)}
+    if(st===0&&bar===0){tone(t,'sine',73.42,73.42,spb*30,.12,MUSG,1,1.2);tone(t,'sine',110,110,spb*30,.06,MUSG,1,1.4)}
+    mNext+=spb;mStep++;
+  }
+}
+
 /* ---------- effects ---------- */
 function burst(x,y,col,n,sp){for(let i=0;i<n;i++)parts.push({x,y,vx:R(-sp,sp),vy:R(-sp*1.4,sp*.4),life:RI(14,28),col,r:R(1.5,3.5)})}
 function sparks(x,y,n,pw){for(let i=0;i<n;i++){const a=R(0,Math.PI*2),v=R(pw*.3,pw);parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-pw*.25,life:RI(12,32),col:Math.random()<.35?'#ffffff':Math.random()<.5?'#ffd35a':'#ff9a3c',r:R(1,2.4),sp:1})}}
 const dust=x=>burst(x,GY,'#d8b48a',8,2);
 const pop=(x,y,txt,col,big)=>pops.push({x,y,txt,col,t:0,big});
-const msg=(txt,dur=90,sub='')=>G.msg={txt,t:0,dur,sub};
+const msg=(txt,dur=90,sub='')=>{if(['3','2','1'].includes(txt))sfx('beep');else if(txt==='Duel!'||/ชนะ!$/.test(txt))sfx('gong');G.msg={txt,t:0,dur,sub}};
 function addLog(s){logItems.unshift(s);logItems=logItems.slice(0,10);document.getElementById('log').innerHTML=logItems.map(x=>`<li>${x}</li>`).join('')}
 let fxs=[];
 const slashFx=(x,y,a,col)=>fxs.push({ty:'line',x,y,a,col,t:0,life:14});
 const flashFx=(x,y,r=60)=>fxs.push({ty:'flash',x,y,r,t:0,life:9});
-function arcFx(f,A){
+function arcFx(f,A){sfx('slash',A.aw||1);
   const la=(A.A[0]+A.B[0])/2,gx=(A.A[1]+A.B[1])/2,gy=(A.A[2]+A.B[2])/2,hipY=f.y-56;
   const cx=f.x+f.s*(Math.sin(la)*36+gx+A.lunge*3),cy=hipY-Math.cos(la)*36+gy;
   fxs.push({ty:'arc',x:cx,y:cy,s:f.s,a0:A.A[3],a1:A.B[3],r:BLADE+12,col:f.col,sf:A.sf,aw:A.aw||1,t:0,life:A.sf+12});
 }
 
 /* ---------- combat ---------- */
-function deflect(o,cx,cy){
+function deflect(o,cx,cy){sfx('deflect');
   healHp(o,5);o.gh=Math.max(o.gh,o.hp);o.en=Math.min(100,o.en+30);
   set(o,'parry');o.dur=14;o.counter=true;
   sparks(cx,cy,70,11);flashFx(cx,cy,90);
@@ -257,7 +324,7 @@ function strike(f,o,A){
   // blades meet mid-swing
   const OA=ATK[o.st];if(OA&&OA.rg>0&&o.t>=OA.w-4&&o.t<OA.w+OA.sf+2&&!o.hit&&o.s===-f.s){
     o.hit=true;const cx=(f.x+o.x)/2,cy=Math.min(f.y,o.y)-100;
-    sparks(cx,cy,45,9);flashFx(cx,cy,70);pop(cx,cy-24,'เคร้ง!','#ffe9a0',1);
+    sfx('clash');sparks(cx,cy,45,9);flashFx(cx,cy,70);pop(cx,cy-24,'เคร้ง!','#ffe9a0',1);
     set(f,'recoil');set(o,'recoil');f.dur=o.dur=16;f.vx=-f.s*7;o.vx=f.s*7;G.hitstop=10;G.shake=7;return;
   }
   if((o.st==='block'||o.st==='parry')&&o.s===-f.s){
@@ -266,13 +333,13 @@ function strike(f,o,A){
       deflect(o,cx,cy);set(f,'recoil');f.dur=28;f.vx=-f.s*6;return;
     }
     const d=Math.max(1,Math.round(dmg*.15));hurtHp(o,d);o.vx=f.s*A.kb*.9;
-    sparks(cx,cy,24,6);pop(cx,cy-18,'ปัด','#fff3c2');
+    sfx('block');sparks(cx,cy,24,6);pop(cx,cy-18,'ปัด','#fff3c2');
     f.en=Math.min(100,f.en+dmg*2);o.en=Math.min(100,o.en+dmg*2);G.hitstop=5;G.shake=3;
     if(o.hp<=0)ko(f,o);return;
   }
   const hx=o.x-f.s*10,hy=o.y-88;
   const crit=Math.random()<.12,dd=crit?Math.round(dmg*R(2,3)):dmg;
-  hurtHp(o,dd);set(o,'hurt');o.vx=f.s*A.kb*(crit?1.6:1);if(A.hv||crit||o.y<GY)o.vy=crit?-7:-5;
+  sfx(crit?'crit':'hit',A.hv);hurtHp(o,dd);set(o,'hurt');o.vx=f.s*A.kb*(crit?1.6:1);if(A.hv||crit||o.y<GY)o.vy=crit?-7:-5;
   burst(hx,hy,'#fff',10,5);burst(hx,hy,f.col,14,4);
   if(crit){const hl=Math.max(3,Math.round(dd*.3));healHp(f,hl);f.gh=Math.max(f.gh,f.hp);pop(f.x,f.y-150,'+'+hl,'#7dffa0',1);pop(hx,hy-30,(o.fireBody>0?Math.round(dd*ARMOR):dd)+'!','#ff2a2a',2);flashFx(hx,hy,110);burst(hx,hy,'#ff2a2a',26,7);G.hitstop=16;G.shake=16}
   else pop(hx,hy-14,'-'+(o.fireBody>0?Math.max(1,Math.round(dd*ARMOR))+' เกราะ':dd),'#fff');
@@ -283,7 +350,7 @@ function strike(f,o,A){
   if(o.hp<=0)ko(f,o);
 }
 function ko(f,o){
-  o.hp=0;set(o,'ko');o.vx=f.s*9;o.vy=-9;f.wins++;projs=[];
+  sfx('ko');o.hp=0;set(o,'ko');o.vx=f.s*9;o.vy=-9;f.wins++;projs=[];
   G.phase='ko';G.pt=0;G.slowT=50;G.hitstop=14;G.shake=14;G.winner=f;
   msg('K.O.!',150);burst(o.x,o.y-70,'#fff',30,7);burst(o.x,o.y-70,f.col,24,6);
   addLog(`ยกที่ ${G.round} — <b style="color:${f.col}">${f.name}</b> ชนะด้วย K.O. (เลือดเหลือ ${Math.ceil(f.hp*HPM)})`);
@@ -293,13 +360,13 @@ function jump(f,dir){set(f,'air');f.vy=-13;f.vx=dir*4.6;f.used=false;f.y-=1;f.ai
 
 /* ---------- ultimates ---------- */
 let ufx=[];
-let HPM=1;try{HPM=+localStorage.getItem('sd-hpm')||1}catch(e){}
+let HPM=2;try{HPM=+localStorage.getItem('sd-hpm2')||2}catch(e){}
 const AURA=175,ARMOR=.75;
 const hurtHp=(o,d)=>{if(o.fireBody>0)d*=ARMOR;o.hp=Math.max(0,o.hp-d/HPM)},healHp=(o,h)=>{o.hp=Math.min(100,o.hp+h/HPM)};
 const clampX=x=>Math.max(40,Math.min(W-40,x));
 const RAISE=[0,2,-52,Math.PI,.3,.1,-.3,-.4],IAI=[.35,0,32,-1.65,.9,.15,-.7,-1.1];
 const ULT_CD=2400; // 40 s between ultimates, carried across rounds
-function startUlt(f,o){
+function startUlt(f,o){sfx('ult');
   f.ultUsed=true;f.ultCd=ULT_CD;f.en=0;f.blockAt=0;f.s=o.x>f.x?1:-1;
   set(f,'ultpose');set(o,'stun');f.vx=o.vx=0;projs=[];ufx=[];
   G.ult={f,o,t:0};G.msg=null;G.camT={x:f.x+f.s*105,y:f.y-62,z:2.1};G.darkT=1;
@@ -322,7 +389,7 @@ function runUlt(){
   const e=t-110;
   if(ULT[f.ult](f,o,e)&&!ufx.length)endUlt();
 }
-function ultHit(f,o,d,fin,x,y){
+function ultHit(f,o,d,fin,x,y){sfx(fin?'boom':'hit',0);
   x=x??o.x;y=y??o.y-90;d=Math.round(d*1.6);hurtHp(o,d);o.fl=5;
   sparks(x,y,fin?60:14,fin?12:6);burst(x,y,f.col,fin?34:10,fin?8:4);
   pop(x+R(-22,22),y-24+R(-16,16),''+d,f.col,fin?2:1);
@@ -330,21 +397,21 @@ function ultHit(f,o,d,fin,x,y){
   if(fin){flashFx(x,y,170);G.slowT=Math.max(G.slowT,36);set(o,'hurt');o.vx=Math.sign(o.x-f.x||f.s)*11;o.vy=-8;if(o.hp<=0)ko(f,o)}
 }
 function cut(f,o,a,d,fin){slashFx(o.x+R(-10,10),o.y-90+R(-20,20),a,f.col);slashFx(o.x,o.y-90,a+R(-.2,.2),'#fff');ultHit(f,o,d,fin)}
-function streak(x0,x1,y,col){return{t:0,upd(){if(++this.t>26)this.dead=1},draw(){
+function streak(x0,x1,y,col){sfx('dash');return{t:0,upd(){if(++this.t>26)this.dead=1},draw(){
   const a=1-this.t/26,g=ctx.createLinearGradient(x0,0,x1,0);g.addColorStop(0,col+'00');g.addColorStop(.7,col);g.addColorStop(1,'#ffffff');
   ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=a;ctx.fillStyle=g;ctx.shadowColor=col;ctx.shadowBlur=30;
   ctx.fillRect(Math.min(x0,x1),y-9*a,Math.abs(x1-x0),18*a);ctx.fillStyle='#fff';ctx.fillRect(Math.min(x0,x1),y-1.5,Math.abs(x1-x0),3);
   for(let i=0;i<10;i++){const yy=y+(i-5)*14;ctx.globalAlpha=a*.5;ctx.fillRect(Math.min(x0,x1)+i*17%60,yy,Math.abs(x1-x0)*.7,1.5)}
   ctx.restore()}}}
 function thunder(f,o,tx,delay,dmg,w,stun,ult){return{t:0,upd(){this.t++;
-    if(this.t===delay){fxs.push({ty:'bolt',x:tx,y0:-80,y1:GY,col:f.col,t:0,life:14,w});flashFx(tx,GY-30,70*w);sparks(tx,GY-10,16*w,6*w);G.shake=Math.max(G.shake,7*w);
+    if(this.t===delay){sfx('thunder');fxs.push({ty:'bolt',x:tx,y0:-80,y1:GY,col:f.col,t:0,life:14,w});flashFx(tx,GY-30,70*w);sparks(tx,GY-10,16*w,6*w);G.shake=Math.max(G.shake,7*w);
       if(Math.abs(o.x-tx)<50*w&&o.y>GY-140){if(ult)ultHit(f,o,dmg,0,o.x,o.y-90);else if(skillHit(f,o,dmg,o.x,o.y-90,4,null)==='hit'&&stun)o.hd=stun}}
     if(this.t>delay)this.dead=1},
   draw(){if(this.t>=delay)return;const a=.4+.4*Math.sin(this.t*.8);ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=a;ctx.strokeStyle=f.col;ctx.lineWidth=2;
     ctx.beginPath();ctx.ellipse(tx,GY+2,50*w,11*w,0,0,7);ctx.stroke();ctx.globalAlpha=a*.35;ctx.fillStyle=f.col;ctx.fillRect(tx-2,0,4,GY);ctx.restore()}}}
 /* ---------- fire: flames, burning, buffs ---------- */
 function flame(f,x,y,vx,vy,r,life){parts.push({x,y,vx,vy,r,life,max:life,fire:1,fl:1,pal:['#fff4c8',f.col,f.dark],col:f.col})}
-function ignite(f,o,dur){if(o.st==='ko')return;if(!(o.burn>0))pop(o.x,o.y-150,'ติดไฟ!',f.col,1);o.burn=Math.max(o.burn||0,dur);o.burnSrc=f}
+function ignite(f,o,dur){if(o.st==='ko')return;sfx('fire');if(!(o.burn>0))pop(o.x,o.y-150,'ติดไฟ!',f.col,1);o.burn=Math.max(o.burn||0,dur);o.burnSrc=f}
 function fireTick(f,o){
   if(f.fireBlade>0){f.fireBlade--;if(f.gripW&&f.tipW&&G.f%2===0){const u=R(.15,1);flame(f,f.gripW[0]+(f.tipW[0]-f.gripW[0])*u,f.gripW[1]+(f.tipW[1]-f.gripW[1])*u,R(-.4,.4),-R(.6,1.8),R(2,4),RI(14,24))}}
   if(f.fireBody>0){f.fireBody--;
@@ -359,7 +426,7 @@ function fireTick(f,o){
 const ULT={
   breath(f,o,e){ // เพลิงกัลป์: breathes a long river of fire, leaving the foe ablaze
     if(e===0){set(f,'ult');f.upose=[.3,8,28,-1.1,.75,.22,-.55,-.75];f.uk=.4}
-    if(e>=12&&e<84){const mx=f.x+f.s*30,my=f.y-120;
+    if(e>=12&&e<84){const mx=f.x+f.s*30,my=f.y-120;if(e%8===0)sfx('fire',1);
       for(let i=0;i<7;i++)flame(f,mx,my+R(-4,4),f.s*R(9,17),R(-2.4,2.4)+R(0,1),R(4,9),RI(26,42));
       G.shake=Math.max(G.shake,3);
       if(e%5===0&&(o.x-mx)*f.s>-10&&Math.abs(o.x-mx)<460){ultHit(f,o,2,0,o.x+R(-10,10),o.y-90+R(-30,30));for(let i=0;i<4;i++)flame(f,o.x+R(-20,20),o.y-R(30,120),R(-1,1),-R(1,3),R(4,7),RI(18,28))}}
@@ -369,11 +436,11 @@ const ULT={
   },
   storm(f,o,e){ // ชมพูนุทพิโรธ: calls the lightning down onto its own blade, then onto the foe
     if(e===0){set(f,'ult');f.upose=RAISE;f.uk=.3;G.darkT=.93}
-    if(e===14){const tx=f.tipW?f.tipW[0]:f.x;fxs.push({ty:'bolt',x:tx,y0:-80,y1:f.tipW?f.tipW[1]:f.y-150,col:f.col,t:0,life:18,w:1.3});G.white=.55;G.shake=9;sparks(tx,f.y-150,30,8)}
+    if(e===14){sfx('thunder');const tx=f.tipW?f.tipW[0]:f.x;fxs.push({ty:'bolt',x:tx,y0:-80,y1:f.tipW?f.tipW[1]:f.y-150,col:f.col,t:0,life:18,w:1.3});G.white=.55;G.shake=9;sparks(tx,f.y-150,30,8)}
     if(e>=20&&e<34&&e%2===0)parts.push({x:f.x+R(-30,30),y:f.y-R(40,160),vx:R(-3,3),vy:R(-3,3),life:10,col:'#fff',r:R(1,2),sp:1});
     if([34,42,50,58,66].includes(e))ufx.push(thunder(f,o,o.x+R(-12,12),1,4,1.1,0,1));
     if(e===74){f.upose=ATK.men.A;f.uk=.5}
-    if(e===84){fxs.push({ty:'bolt',x:o.x,y0:-120,y1:GY,col:f.col,t:0,life:26,w:3.2});G.white=1;fxs.push({ty:'ring',x:o.x,y:GY,col:f.col,t:0,life:42,big:1});ultHit(f,o,16,1);f.upose=ATK.men.B;f.uk=.6}
+    if(e===84){sfx('thunder');fxs.push({ty:'bolt',x:o.x,y0:-120,y1:GY,col:f.col,t:0,life:26,w:3.2});G.white=1;fxs.push({ty:'ring',x:o.x,y:GY,col:f.col,t:0,life:42,big:1});ultHit(f,o,16,1);f.upose=ATK.men.B;f.uk=.6}
     return e>=118;
   },
   dash(f,o,e){ // ชาดอัสดง: lunge straight through the target, delayed cuts bloom after
@@ -447,7 +514,7 @@ const ULT={
 
 /* ---------- skills: one small move per sword, echoing its ultimate ---------- */
 const MANA=100/3;
-function castSkill(f,o,big){
+function castSkill(f,o,big){sfx('cast',big);
   f.en-=big?2*MANA:MANA;f.big=!!big;f.aid++;f.blockAt=0;f.s=o.x>f.x?1:-1;set(f,'skill');f.vx=0;f.upose=ST[f.stance||'chudan'];f.uk=.35;
   const S=(big?SKILL2:SKILL)[f.ult];pop(Math.max(170,Math.min(W-170,f.x)),f.y-165,S.name,f.col,big?3:1);
   if(big){fxs.push({ty:'ring',x:f.x,y:GY,col:f.col,t:0,life:36});sparks(f.x,f.y-90,26,6);G.shake=Math.max(G.shake,5)}
@@ -459,11 +526,11 @@ function skillHit(f,o,d,x,y,kb,from){
   if((o.st==='block'||o.st==='parry')&&facing){
     if(o.st==='block'&&o.t<=7){deflect(o,x,y);return 'deflect'}
     const c=Math.max(1,Math.round(d*.15));hurtHp(o,c);o.vx=dir*3;
-    sparks(x,y,24,6);pop(x,y-18,'ปัด','#fff3c2');G.hitstop=5;if(o.hp<=0)ko(f,o);return 'block';
+    sfx('block');sparks(x,y,24,6);pop(x,y-18,'ปัด','#fff3c2');G.hitstop=5;if(o.hp<=0)ko(f,o);return 'block';
   }
   d=Math.round(d*f.pow);hurtHp(o,d);set(o,'hurt');o.vx=dir*(kb||6);o.vy=-4;
   burst(x,y,'#fff',10,5);burst(x,y,f.col,14,4);pop(x+R(-10,10),y-16,'-'+d,'#fff');
-  G.hitstop=6;G.shake=6;o.en=Math.min(100,o.en+d*2);
+  sfx('hit',0);G.hitstop=6;G.shake=6;o.en=Math.min(100,o.en+d*2);
   if(o.hp<=0)ko(f,o);return 'hit';
 }
 function bolt(f,o,x,y,dir,dmg,sc){return{x,y,t:0,upd(){this.x+=dir*15;this.t++;
@@ -482,13 +549,13 @@ function marker(x,col,life,rad=46){return{t:0,upd(){if(++this.t>life)this.dead=1
 const SKILL={
   breath:{name:'ดาบเพลิง',lead:99,want:(d,f)=>f.fireBlade>0?0:d<260?.5:.25,run(f,o,t){ // set the blade alight: normal cuts ignite the foe
     if(t===1){f.upose=[0,10,-6,3.05,.5,.1,-.4,-.6];f.uk=.4}
-    if(t===12){f.fireBlade=420;if(f.gripW&&f.tipW)for(let i=0;i<24;i++){const u=Math.random();flame(f,f.gripW[0]+(f.tipW[0]-f.gripW[0])*u,f.gripW[1]+(f.tipW[1]-f.gripW[1])*u,R(-2,2),-R(1,3),R(3,6),RI(18,28))}flashFx(f.tipW?f.tipW[0]:f.x,f.tipW?f.tipW[1]:f.y-120,60)}
+    if(t===12){sfx('fire',1);f.fireBlade=420;if(f.gripW&&f.tipW)for(let i=0;i<24;i++){const u=Math.random();flame(f,f.gripW[0]+(f.tipW[0]-f.gripW[0])*u,f.gripW[1]+(f.tipW[1]-f.gripW[1])*u,R(-2,2),-R(1,3),R(3,6),RI(18,28))}flashFx(f.tipW?f.tipW[0]:f.x,f.tipW?f.tipW[1]:f.y-120,60)}
     return t>=24}},
   storm:{name:'อัสนีแล่น',lead:12,want:d=>d<330?.3:0,run(f,o,t){ // a crackling arc from the blade that leaves the foe numb
     if(t===1){f.upose=ATK.kesa.A;f.uk=.5}
     if(t===12){f.upose=[.3,36,4,1.57,...LL];f.uk=1;
       const x0=f.x+f.s*120,y0=f.y-96,inR=(o.x-f.x)*f.s>0&&Math.abs(o.x-f.x)<330,x1=inR?o.x:f.x+f.s*330;
-      fxs.push({ty:'zap',x0,y0,x1,y1:o.y-90,col:f.col,t:0,life:12,w:.9});G.shake=5;
+      sfx('thunder');fxs.push({ty:'zap',x0,y0,x1,y1:o.y-90,col:f.col,t:0,life:12,w:.9});G.shake=5;
       if(inR&&skillHit(f,o,7,o.x,o.y-90,3,f.x)==='hit')o.hd=40}
     return t>=28}},
   dash:{name:'ก้าวชาด',lead:14,want:d=>d<300?.3:0,run(f,o,t){ // a short version of the dashing cut
@@ -511,7 +578,7 @@ const SKILL={
     if(t===10){const tx=o.x,x0=tx-f.s*140,y0=60;ufx.push(marker(tx,f.col,40));
       ufx.push({t:0,x:x0,y:y0,upd(){this.t++;const u=Math.min(1,this.t/38),q=u*u;this.x=x0+(tx-x0)*q;this.y=y0+(GY-40-y0)*q;
         if(this.t<38)parts.push({x:this.x+R(-10,10),y:this.y+R(-10,10),vx:R(-.5,.5),vy:-R(1,2),life:RI(12,22),col:Math.random()<.5?'#ffcf5a':f.col,r:R(2,4),fl:1});
-        if(this.t===38){flashFx(tx,GY-40,120);fxs.push({ty:'ring',x:tx,y:GY,col:f.col,t:0,life:30});G.shake=10;
+        if(this.t===38){sfx('boom');flashFx(tx,GY-40,120);fxs.push({ty:'ring',x:tx,y:GY,col:f.col,t:0,life:30});G.shake=10;
           for(let i=0;i<30;i++){const a=R(Math.PI,Math.PI*2),v=R(2,8);parts.push({x:tx,y:GY-10,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:RI(16,30),col:Math.random()<.5?'#ff8a2a':f.col,r:R(2,4)})}
           if(Math.abs(o.x-tx)<70)skillHit(f,o,12,o.x,GY-60,8,null)}
         if(this.t>40)this.dead=1},
@@ -551,7 +618,7 @@ function blinkCut(f,o,side,dmg){
 const SKILL2={
   breath:{name:'กายเพลิง',lead:99,want:(d,f)=>f.fireBody>0?0:d<220?.45:.2,run(f,o,t){ // wreathe the body in fire that scalds anyone close
     if(t===1){f.upose=[-.15,6,30,-1.3,.65,.15,-.55,-.75];f.uk=.4}
-    if(t===14){f.fireBody=420;fxs.push({ty:'ring',x:f.x,y:GY,col:f.col,t:0,life:36,big:1});flashFx(f.x,f.y-80,120);G.shake=8;
+    if(t===14){sfx('fire',1);f.fireBody=420;fxs.push({ty:'ring',x:f.x,y:GY,col:f.col,t:0,life:36,big:1});flashFx(f.x,f.y-80,120);G.shake=8;
       for(let i=0;i<50;i++)flame(f,f.x+R(-30,30),f.y-R(0,130),R(-3,3),-R(1,4),R(4,8),RI(20,36))}
     return t>=30}},
   storm:{name:'อัสนีบาตสามสาย',lead:24,want:d=>.32,run(f,o,t){ // three bolts, each aimed where the foe is now
@@ -582,7 +649,7 @@ const SKILL2={
     if(t===10){const tx=o.x,x0=tx-f.s*180,y0=40;ufx.push(marker(tx,f.col,46,100));
       ufx.push({t:0,x:x0,y:y0,upd(){this.t++;const u=Math.min(1,this.t/44),q=u*u;this.x=x0+(tx-x0)*q;this.y=y0+(GY-40-y0)*q;
         if(this.t<44)for(let i=0;i<2;i++)parts.push({x:this.x+R(-16,16),y:this.y+R(-16,16),vx:R(-.5,.5),vy:-R(1,2.5),life:RI(14,26),col:Math.random()<.5?'#ffcf5a':f.col,r:R(2,4),fl:1});
-        if(this.t===44){flashFx(tx,GY-40,170);fxs.push({ty:'ring',x:tx,y:GY,col:f.col,t:0,life:36,big:1});G.shake=14;
+        if(this.t===44){sfx('boom');flashFx(tx,GY-40,170);fxs.push({ty:'ring',x:tx,y:GY,col:f.col,t:0,life:36,big:1});G.shake=14;
           for(let i=0;i<40;i++){const a=R(Math.PI,Math.PI*2),v=R(2,10);parts.push({x:tx,y:GY-10,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:RI(16,34),col:Math.random()<.5?'#ff8a2a':f.col,r:R(2,4)})}
           if(Math.abs(o.x-tx)<100)skillHit(f,o,16,o.x,GY-60,9,null);
           [-150,-75,75,150].forEach(dx=>ufx.push(ember(f,o,tx,clampX(tx+dx))))}
@@ -968,7 +1035,7 @@ function betLine(w){
 document.getElementById('cards').addEventListener('click',e=>{
   const b=e.target.closest('[data-bet]');if(!b||G.locked)return;G.bet=+b.dataset.bet;renderCards();betLine();
 });
-let paused=false,speed=1,last=performance.now(),acc=0;
+let paused=false,speed=2,last=performance.now(),acc=0;
 const pb=document.getElementById('pause');
 function togglePause(){paused=!paused;pb.textContent=paused?'เล่นต่อ':'หยุดชั่วคราว';pb.classList.toggle('on',paused)}
 pb.addEventListener('click',togglePause);
@@ -1027,10 +1094,14 @@ document.getElementById('rnd').addEventListener('click',()=>{
 document.getElementById('start').addEventListener('click',startMatch);
 const hpBtns=[...document.querySelectorAll('[data-hpm]')];
 const showHpm=()=>hpBtns.forEach(b=>b.classList.toggle('on',+b.dataset.hpm===HPM));showHpm();
-hpBtns.forEach(b=>b.addEventListener('click',()=>{HPM=+b.dataset.hpm;try{localStorage.setItem('sd-hpm',HPM)}catch(e){}showHpm()}));
+hpBtns.forEach(b=>b.addEventListener('click',()=>{HPM=+b.dataset.hpm;try{localStorage.setItem('sd-hpm2',HPM)}catch(e){}showHpm()}));
 
 document.getElementById('new').addEventListener('click',openSelect);
 addEventListener('keydown',e=>{if(e.code==='Space'&&e.target===document.body&&!selecting){e.preventDefault();togglePause()}});
+const sndBtn=document.getElementById('sndBtn'),musBtn=document.getElementById('musBtn');
+function showSnd(){sndBtn.textContent=SND.on?'เสียงเอฟเฟกต์: เปิด':'เสียงเอฟเฟกต์: ปิด';musBtn.textContent=SND.music?'ดนตรี: เปิด':'ดนตรี: ปิด';sndBtn.classList.toggle('on',SND.on);musBtn.classList.toggle('on',SND.music);
+  try{localStorage.setItem('sd-snd',JSON.stringify(SND))}catch(e){}if(AC){SFXG.gain.value=SND.on?1:0;MUSG.gain.value=SND.music?.32:0}}
+sndBtn.addEventListener('click',()=>{initAudio();SND.on=!SND.on;showSnd()});musBtn.addEventListener('click',()=>{initAudio();SND.music=!SND.music;showSnd()});showSnd();
 const readyEl=document.getElementById('ready');
 document.getElementById('go').addEventListener('click',()=>{if(G.phase!=='ready')return;G.phase='intro';G.pt=0;G.locked=true;renderCards();betLine();if(paused)togglePause()});
 function loop(now){
