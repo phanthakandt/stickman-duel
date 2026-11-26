@@ -150,13 +150,13 @@ function drawBg(){
 /* ---------- fighters ---------- */
 const ROSTER=[
   {name:'ชาดอัสดง',ult:'dash',stance:'jodan',alt:['#ff7ab8','#93285e'],col:'#ff5a3c',dark:'#8f2716',acc:'spike',style:'สายบุกดุดัน',desc:'ฟันรัวไม่หยุด แต่การ์ดหลวม',agg:.82,pb:.25,agi:.14,jumpy:.12,spd:2.8,pow:1.03},
-  {name:'นีลนภา',ult:'rain',stance:'chudan',alt:['#8f8cff','#2e3a96'],col:'#3fbcff',dark:'#185b86',acc:'band',style:'สายตั้งรับ',desc:'ใจเย็น ตั้งดาบรอปัดแล้วสวน',agg:.5,pb:.52,agi:.16,jumpy:.07,spd:2.5,pow:1.03},
+  {name:'นีลนภา',ult:'rain',stance:'chudan',alt:['#8f8cff','#2e3a96'],col:'#3fbcff',dark:'#185b86',acc:'band',style:'สายตั้งรับ',desc:'ใจเย็น ตั้งดาบรอปัดแล้วสวน',agg:.5,pb:.52,agi:.16,jumpy:.07,spd:2.5,pow:1.08},
   {name:'หยกพรายพลิ้ว',ult:'wind',stance:'waki',alt:['#b4f05a','#5a7d1c'],col:'#5ce0c0',dark:'#1d7a66',acc:'scarf',style:'สายพลิ้วไหว',desc:'หลบเก่ง ชอบกระโดดฟันจากกลางอากาศ',agg:0.66,pb:0.32,agi:.3,jumpy:.2,spd:3.1,pow:1.1},
   {name:'อำพันหลับใหล',ult:'meteor',stance:'hasso',alt:['#d4d4d4','#5e5e5e'],col:'#e8a25c',dark:'#8a5624',acc:'hat',style:'สายดาบหนัก',desc:'เดินช้า แต่ฟันทีหนักที่สุด',agg:.66,pb:.42,agi:.06,jumpy:.05,spd:2.15,pow:1.1},
   {name:'สุวรรณรัตติกาล',ult:'iai',stance:'iai',alt:['#fff6c8','#8f8250'],col:'#ffd94a',dark:'#9a7a12',acc:'band',style:'สายชักดาบ',desc:'เร็วที่สุดในสนาม บุกไม่ยั้ง',agg:.76,pb:0.26,agi:.22,jumpy:.14,spd:3.2,pow:1.12},
   {name:'บุษบาราตรี',ult:'petal',stance:'gedan',alt:['#ff6b8f','#8f2340'],col:'#c49bff',dark:'#5d3f99',acc:'hood',style:'สายนักฆ่า',desc:'เงียบ เร็ว หลบแล้วสวนแม่น',agg:0.6,pb:0.22,agi:0.2,jumpy:.16,spd:2.9,pow:0.87},
   {name:'ชมพูนุทพิโรธ',ult:'storm',stance:'kasumi',alt:['#7af0ff','#1f6f80'],col:'#ff5fb7',dark:'#8f1f5e',acc:'pony',style:'สายอัสนี',desc:'ฟาดสายฟ้าให้ชา แล้วรุมฟัน',agg:.74,pb:.29,agi:.22,jumpy:.15,spd:3,pow:1.1},
-  {name:'เพลิงกัลป์',ult:'breath',stance:'katsugi',alt:['#8fd4ff','#245a8a'],col:'#ff7a1a',dark:'#a8380a',acc:'flame',style:'สายเผาผลาญ',desc:'จุดไฟดาบและกาย เผาศัตรูทีละน้อย',agg:.7,pb:.28,agi:.16,jumpy:.1,spd:2.6,pow:1.05}
+  {name:'เพลิงกัลป์',ult:'breath',stance:'katsugi',alt:['#8fd4ff','#245a8a'],col:'#ff7a1a',dark:'#a8380a',acc:'flame',style:'สายเผาผลาญ',desc:'จุดไฟดาบและกาย เผาศัตรูทีละน้อย',agg:0.62,pb:0.2,agi:0.12,jumpy:.1,spd:2.6,pow:0.93}
 ];
 let fxsDummy=0,F=[],projs=[],parts=[],pops=[],G={f:0},logItems=[],picks=[0,1],slot=0,selecting=true;
 function mk(i,r){const o=Object.assign({id:i,wins:0},ROSTER[r]);if(i===1&&picks[0]===picks[1]){o.col=o.alt[0];o.dark=o.alt[1];o.name+=' II'}return o}
@@ -261,8 +261,8 @@ function strike(f,o,A){
   const crit=Math.random()<.12,dd=crit?Math.round(dmg*R(2,3)):dmg;
   hurtHp(o,dd);set(o,'hurt');o.vx=f.s*A.kb*(crit?1.6:1);if(A.hv||crit||o.y<GY)o.vy=crit?-7:-5;
   burst(hx,hy,'#fff',10,5);burst(hx,hy,f.col,14,4);
-  if(crit){const hl=Math.max(3,Math.round(dd*.3));healHp(f,hl);f.gh=Math.max(f.gh,f.hp);pop(f.x,f.y-150,'+'+hl,'#7dffa0',1);pop(hx,hy-30,dd+'!','#ff2a2a',2);flashFx(hx,hy,110);burst(hx,hy,'#ff2a2a',26,7);G.hitstop=16;G.shake=16}
-  else pop(hx,hy-14,'-'+dd,'#fff');
+  if(crit){const hl=Math.max(3,Math.round(dd*.3));healHp(f,hl);f.gh=Math.max(f.gh,f.hp);pop(f.x,f.y-150,'+'+hl,'#7dffa0',1);pop(hx,hy-30,(o.fireBody>0?Math.round(dd*ARMOR):dd)+'!','#ff2a2a',2);flashFx(hx,hy,110);burst(hx,hy,'#ff2a2a',26,7);G.hitstop=16;G.shake=16}
+  else pop(hx,hy-14,'-'+(o.fireBody>0?Math.max(1,Math.round(dd*ARMOR))+' เกราะ':dd),'#fff');
   slashFx(hx,hy,(A.B[3]>2?-.9:A.B[3]<.8?-1:.7)*f.s,f.col);
   if(f.fireBlade>0)ignite(f,o,180);
   if(!crit){G.hitstop=Math.round(4+4*(A.aw||1));G.shake=3+6*(A.aw||1)}
@@ -281,7 +281,8 @@ function jump(f,dir){set(f,'air');f.vy=-13;f.vx=dir*4.6;f.used=false;f.y-=1;f.ai
 /* ---------- ultimates ---------- */
 let ufx=[];
 let HPM=1;try{HPM=+localStorage.getItem('sd-hpm')||1}catch(e){}
-const hurtHp=(o,d)=>{o.hp=Math.max(0,o.hp-d/HPM)},healHp=(o,h)=>{o.hp=Math.min(100,o.hp+h/HPM)};
+const AURA=175,ARMOR=.75;
+const hurtHp=(o,d)=>{if(o.fireBody>0)d*=ARMOR;o.hp=Math.max(0,o.hp-d/HPM)},healHp=(o,h)=>{o.hp=Math.min(100,o.hp+h/HPM)};
 const clampX=x=>Math.max(40,Math.min(W-40,x));
 const RAISE=[0,2,-52,Math.PI,.3,.1,-.3,-.4],IAI=[.35,0,32,-1.65,.9,.15,-.7,-1.1];
 function startUlt(f,o){
@@ -332,8 +333,12 @@ function flame(f,x,y,vx,vy,r,life){parts.push({x,y,vx,vy,r,life,max:life,fire:1,
 function ignite(f,o,dur){if(o.st==='ko')return;if(!(o.burn>0))pop(o.x,o.y-150,'ติดไฟ!',f.col,1);o.burn=Math.max(o.burn||0,dur);o.burnSrc=f}
 function fireTick(f,o){
   if(f.fireBlade>0){f.fireBlade--;if(f.gripW&&f.tipW&&G.f%2===0){const u=R(.15,1);flame(f,f.gripW[0]+(f.tipW[0]-f.gripW[0])*u,f.gripW[1]+(f.tipW[1]-f.gripW[1])*u,R(-.4,.4),-R(.6,1.8),R(2,4),RI(14,24))}}
-  if(f.fireBody>0){f.fireBody--;if(G.f%2===0)flame(f,f.x+R(-22,22),f.y-R(10,120),R(-.5,.5),-R(.8,2.2),R(3,6),RI(18,30));
-    if(G.f%20===0&&!G.ult&&G.phase==='fight'&&o.st!=='ko'&&Math.abs(o.x-f.x)<105){hurtHp(o,2);o.fl=3;pop(o.x+R(-10,10),o.y-120,'2',f.col);for(let i=0;i<6;i++)flame(f,o.x+R(-18,18),o.y-R(30,110),R(-1,1),-R(1,2.5),R(3,5),RI(14,22));if(o.hp<=0)ko(f,o)}}
+  if(f.fireBody>0){f.fireBody--;
+    if(G.f%2===0)flame(f,f.x+R(-22,22),f.y-R(10,120),R(-.5,.5),-R(.8,2.2),R(3,6),RI(18,30));
+    for(let i=0;i<2;i++){const dx=R(-AURA,AURA);flame(f,f.x+dx,GY-R(0,6),R(-.3,.3),-R(.6,1.8)*(1-Math.abs(dx)/AURA*.6),R(3,6),RI(16,30))}
+    if(G.f%15===0&&!G.ult&&G.phase==='fight'&&o.st!=='ko'&&Math.abs(o.x-f.x)<AURA){hurtHp(o,1);o.auraAcc=(o.auraAcc||0)+1;
+      for(let i=0;i<3;i++)flame(f,o.x+R(-16,16),o.y-R(20,110),R(-1,1),-R(1,2.5),R(3,5),RI(14,22));
+      if(o.auraAcc>=4){pop(o.x+R(-10,10),o.y-120,''+o.auraAcc,f.col);o.auraAcc=0}if(o.hp<=0)ko(f,o)}}
   if(f.burn>0){f.burn--;const src=f.burnSrc||f;if(G.f%3===0)flame(src,f.x+R(-16,16),f.y-R(20,125),R(-.5,.5),-R(1,2.4),R(2.5,5),RI(14,24));
     if(f.burn%30===0&&!G.ult&&G.phase==='fight'&&f.st!=='ko'){hurtHp(f,2);pop(f.x+R(-12,12),f.y-130,'2',src.col);if(f.hp<=0)ko(src,f)}}
 }
@@ -751,8 +756,11 @@ function drawFighter(f){
   const [e1,h1]=ik(sh,g,24,22);let e2,h2;
   if(f.st==='ultpose'){e2=seg(sh,-.12,24);h2=seg(e2,-.02,22)}else[e2,h2]=ik(sh,at(-15),24,22);
   const ultMe=G.ult&&G.ult.f===f,dkn=G.dark||0;
-  if(f.fireBody>0){const fl=.75+Math.random()*.25,ag=ctx.createRadialGradient(hip[0],hip[1]-30,6,hip[0],hip[1]-30,95);ag.addColorStop(0,f.col+'99');ag.addColorStop(1,f.col+'00');
-    ctx.save();ctx.globalAlpha=fl*Math.min(1,f.fireBody/30);ctx.globalCompositeOperation='lighter';ctx.fillStyle=ag;ctx.beginPath();ctx.arc(hip[0],hip[1]-30,95,0,7);ctx.fill();ctx.restore()}
+  if(f.fireBody>0){const fl=.75+Math.random()*.25,fa=Math.min(1,f.fireBody/30);ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=fl*fa;
+    const gg=ctx.createRadialGradient(0,0,10,0,0,AURA);gg.addColorStop(0,f.col+'77');gg.addColorStop(1,f.col+'00');ctx.fillStyle=gg;ctx.beginPath();ctx.ellipse(0,0,AURA,AURA*.2,0,0,7);ctx.fill();
+    ctx.globalAlpha=fa*(.5+.3*Math.sin(G.f*.3));ctx.strokeStyle=f.col;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,0,AURA,AURA*.2,0,0,7);ctx.stroke();
+    const ag=ctx.createRadialGradient(hip[0],hip[1]-30,6,hip[0],hip[1]-30,110);ag.addColorStop(0,f.col+'88');ag.addColorStop(1,f.col+'00');ctx.globalAlpha=fl*fa;ctx.fillStyle=ag;ctx.beginPath();ctx.arc(hip[0],hip[1]-30,110,0,7);ctx.fill();
+    ctx.globalAlpha=fa*(.55+.25*Math.sin(G.f*.5));ctx.strokeStyle='#ffe2a8';ctx.lineWidth=2.5;ctx.shadowColor=f.col;ctx.shadowBlur=14;ctx.beginPath();ctx.ellipse(hip[0],hip[1]-38,46,86,0,0,7);ctx.stroke();ctx.restore()}
   if(ultMe&&f.st==='ultpose'){const pu=.22+Math.sin(G.f*.2)*.06,ag=ctx.createRadialGradient(hip[0],hip[1]-20,4,hip[0],hip[1]-20,120);ag.addColorStop(0,f.col+'88');ag.addColorStop(1,f.col+'00');
     ctx.save();ctx.globalAlpha=pu*3;ctx.globalCompositeOperation='lighter';ctx.fillStyle=ag;ctx.beginPath();ctx.arc(hip[0],hip[1]-20,120,0,7);ctx.fill();ctx.restore()}
   if(f.fl>0)f.fl--;
