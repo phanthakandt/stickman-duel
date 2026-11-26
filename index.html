@@ -382,9 +382,10 @@ const ULT={
 
 /* ---------- skills: one small move per sword, echoing its ultimate ---------- */
 const MANA=100/3;
-function castSkill(f,o){
-  f.en-=MANA;f.aid++;f.blockAt=0;f.s=o.x>f.x?1:-1;set(f,'skill');f.vx=0;f.upose=ST[f.stance||'chudan'];f.uk=.35;
-  const S=SKILL[f.ult];pop(f.x,f.y-165,S.name,f.col,1);
+function castSkill(f,o,big){
+  f.en-=big?2*MANA:MANA;f.big=!!big;f.aid++;f.blockAt=0;f.s=o.x>f.x?1:-1;set(f,'skill');f.vx=0;f.upose=ST[f.stance||'chudan'];f.uk=.35;
+  const S=(big?SKILL2:SKILL)[f.ult];pop(Math.max(170,Math.min(W-170,f.x)),f.y-165,S.name,f.col,big?3:1);
+  if(big){fxs.push({ty:'ring',x:f.x,y:GY,col:f.col,t:0,life:36});sparks(f.x,f.y-90,26,6);G.shake=Math.max(G.shake,5)}
 }
 function skillHit(f,o,d,x,y,kb,from){
   if(o.st==='ko'||G.ult)return 'miss';
@@ -406,13 +407,13 @@ function bolt(f,o,x,y,dir,dmg,sc){return{x,y,t:0,upd(){this.x+=dir*15;this.t++;
     if(this.x<-60||this.x>W+60||this.t>90)this.dead=1},
   draw(){ctx.save();ctx.translate(this.x,this.y);ctx.scale(dir*sc,sc);ctx.globalCompositeOperation='lighter';ctx.shadowColor=f.col;ctx.shadowBlur=20;ctx.fillStyle=f.col;
     ctx.beginPath();ctx.arc(-14,0,40,-1.25,1.25);ctx.arc(-34,0,38,1.1,-1.1,true);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(-14,0,39,-1,1);ctx.stroke();ctx.restore()}}}
-function dropSword(f,o,x,delay,dmg){return{x,y:-80-delay,t:0,upd(){if(!this.hit){this.y+=24;if(this.y>=GY-40){this.hit=1;sparks(this.x,GY-40,10,5);
-      if(Math.abs(o.x-this.x)<42)skillHit(f,o,dmg,this.x,GY-80,3,null)}}else if(++this.t>14)this.dead=1},
-  draw(){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=this.hit?1-this.t/14:1;ctx.shadowColor=f.col;ctx.shadowBlur=16;ctx.strokeStyle=f.col;ctx.lineWidth=4;
-    ctx.beginPath();ctx.moveTo(this.x,this.y-80);ctx.lineTo(this.x,this.y);ctx.stroke();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
-    ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(this.x-8,this.y-68);ctx.lineTo(this.x+8,this.y-68);ctx.stroke();ctx.restore()}}}
-function marker(x,col,life){return{t:0,upd(){if(++this.t>life)this.dead=1},draw(){const a=.35+.35*Math.sin(this.t*.5);ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=a;
-  ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,GY+2,46,10,0,0,7);ctx.stroke();ctx.restore()}}}
+function dropSword(f,o,x,delay,dmg,sc=1){return{x,y:-80-delay,t:0,upd(){if(!this.hit){this.y+=24;if(this.y>=GY-40){this.hit=1;sparks(this.x,GY-40,10*sc,5*sc);if(sc>1){flashFx(this.x,GY-60,80*sc);G.shake=8}
+      if(Math.abs(o.x-this.x)<42*sc)skillHit(f,o,dmg,this.x,GY-80,3*sc,null)}}else if(++this.t>14)this.dead=1},
+  draw(){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=this.hit?1-this.t/14:1;ctx.shadowColor=f.col;ctx.shadowBlur=16*sc;ctx.strokeStyle=f.col;ctx.lineWidth=4*sc;
+    ctx.beginPath();ctx.moveTo(this.x,this.y-80*sc);ctx.lineTo(this.x,this.y);ctx.stroke();ctx.strokeStyle='#fff';ctx.lineWidth=1.5*sc;ctx.stroke();
+    ctx.lineWidth=3*sc;ctx.beginPath();ctx.moveTo(this.x-8*sc,this.y-68*sc);ctx.lineTo(this.x+8*sc,this.y-68*sc);ctx.stroke();ctx.restore()}}}
+function marker(x,col,life,rad=46){return{t:0,upd(){if(++this.t>life)this.dead=1},draw(){const a=.35+.35*Math.sin(this.t*.5);ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=a;
+  ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,GY+2,rad,rad*.22,0,0,7);ctx.stroke();ctx.restore()}}}
 const SKILL={
   dash:{name:'ก้าวชาด',lead:14,want:d=>d<300?.3:0,run(f,o,t){ // a short version of the dashing cut
     if(t===1){f.upose=ATK.kesa.A;f.uk=.45}
@@ -459,6 +460,71 @@ const SKILL={
     return t>=48}}
 };
 
+/* ---------- big skills: two thirds of mana, one per sword ---------- */
+function ember(f,o,x0,x1){return{t:0,x:x0,y:GY-40,upd(){this.t++;const u=Math.min(1,this.t/26);this.x=x0+(x1-x0)*u;this.y=GY-40-Math.sin(u*Math.PI)*110+u*40;
+    if(this.t%2)parts.push({x:this.x,y:this.y,vx:R(-.4,.4),vy:-R(.5,1.5),life:14,col:f.col,r:R(1.5,3),fl:1});
+    if(this.t===26){flashFx(x1,GY-20,60);sparks(x1,GY-10,14,5);if(Math.abs(o.x-x1)<50)skillHit(f,o,4,o.x,GY-50,4,null)}
+    if(this.t>27)this.dead=1},
+  draw(){if(this.t>=26)return;const g=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,18);g.addColorStop(0,'#fff');g.addColorStop(.4,f.col);g.addColorStop(1,f.col+'00');
+    ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.beginPath();ctx.arc(this.x,this.y,18,0,7);ctx.fill();ctx.restore()}}}
+function blinkCut(f,o,side,dmg){
+  const x0=f.x,x1=clampX(o.x+side*80);G.white=Math.max(G.white||0,.3);ufx.push(streak(x0,x1,f.y-70,f.col));f.x=x1;f.s=o.x>f.x?1:-1;
+  f.upose=[.3,34,18,1.3,...LL];f.uk=1;const r=skillHit(f,o,dmg,o.x,o.y-90,5,x1);
+  if(r==='hit')slashFx(o.x,o.y-90,R(-1.2,1.2),f.col);if(r==='deflect'){set(f,'recoil');f.dur=26}return r;
+}
+const SKILL2={
+  dash:{name:'สามก้าวสนธยา',lead:14,want:d=>d<320?.35:0,run(f,o,t){ // three dashes back and forth through the foe
+    if(t===1){f.upose=ATK.kesa.A;f.uk=.5}
+    if(t===14||t===32||t===50){const x0=f.x,side=o.x>f.x?1:-1,x1=clampX(o.x+side*80);
+      ufx.push(streak(x0,x1,f.y-82,f.col));f.x=x1;f.s=side;f.upose=[.4,36,20,.5,...LL];f.uk=1;
+      const r=skillHit(f,o,8,o.x,o.y-90,4,x0);if(r==='hit')slashFx(o.x,o.y-90,(t===32?.6:-.6),f.col);if(r==='deflect'){set(f,'recoil');f.dur=26;return false}}
+    if(t===22||t===40){f.s=o.x>f.x?1:-1;f.upose=ATK.kesa.A;f.uk=.6}
+    return t>=66}},
+  rain:{name:'ม่านฟ้าครึ้ม',lead:30,want:d=>d>80?.35:.1,run(f,o,t){ // a marching line of blades, then one great blade
+    if(t===1){f.upose=RAISE;f.uk=.35}
+    if(t===12){const dir=f.s,tx=o.x;for(let k=0;k<7;k++)ufx.push(dropSword(f,o,f.x+dir*(70+k*48),k*34+30,4));
+      ufx.push(marker(tx,f.col,70,70));ufx.push(dropSword(f,o,tx,420,10,2))}
+    return t>=36}},
+  wind:{name:'พายุหยกสามคม',lead:16,want:d=>d>100?.4:.1,run(f,o,t){ // high, low, then a large mid crescent
+    const shots={8:[ATK.kesa,-125,6,1],20:[ATK.kiriage,-58,6,1],34:[ATK.kesa,-92,9,1.6]};
+    if(t===1){f.upose=ATK.kesa.A;f.uk=.6}
+    if(t===14){f.upose=ATK.kiriage.A;f.uk=.7}if(t===27){f.upose=ATK.kesa.A;f.uk=.7}
+    const sh=shots[t];if(sh){f.upose=sh[0].B;f.uk=1;arcFx(f,sh[0]);ufx.push(bolt(f,o,f.x+f.s*50,f.y+sh[1],f.s,sh[2],sh[3]))}
+    return t>=48}},
+  meteor:{name:'อำพันแตกกระจาย',lead:44,want:d=>d>100?.35:.08,run(f,o,t){ // a big ember that bursts into four smaller ones
+    if(t===1){f.upose=RAISE;f.uk=.35}
+    if(t===10){const tx=o.x,x0=tx-f.s*180,y0=40;ufx.push(marker(tx,f.col,46,100));
+      ufx.push({t:0,x:x0,y:y0,upd(){this.t++;const u=Math.min(1,this.t/44),q=u*u;this.x=x0+(tx-x0)*q;this.y=y0+(GY-40-y0)*q;
+        if(this.t<44)for(let i=0;i<2;i++)parts.push({x:this.x+R(-16,16),y:this.y+R(-16,16),vx:R(-.5,.5),vy:-R(1,2.5),life:RI(14,26),col:Math.random()<.5?'#ffcf5a':f.col,r:R(2,4),fl:1});
+        if(this.t===44){flashFx(tx,GY-40,170);fxs.push({ty:'ring',x:tx,y:GY,col:f.col,t:0,life:36,big:1});G.shake=14;
+          for(let i=0;i<40;i++){const a=R(Math.PI,Math.PI*2),v=R(2,10);parts.push({x:tx,y:GY-10,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:RI(16,34),col:Math.random()<.5?'#ff8a2a':f.col,r:R(2,4)})}
+          if(Math.abs(o.x-tx)<100)skillHit(f,o,16,o.x,GY-60,9,null);
+          [-150,-75,75,150].forEach(dx=>ufx.push(ember(f,o,tx,clampX(tx+dx))))}
+        if(this.t>45)this.dead=1},
+        draw(){if(this.t>=44)return;const r=22+18*Math.min(1,this.t/44),g=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,r*1.8);g.addColorStop(0,'#fff');g.addColorStop(.3,'#ffe08a');g.addColorStop(.6,f.col);g.addColorStop(1,f.col+'00');
+          ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.beginPath();ctx.arc(this.x,this.y,r*1.8,0,7);ctx.fill();ctx.restore()}})}
+    if(t===48){f.upose=ATK.men.B;f.uk=.5}
+    return t>=52}},
+  iai:{name:'ทองสามพริบ',lead:14,want:d=>.3,run(f,o,t){ // three blinks around the foe, a cut at each
+    if(t===1){f.upose=IAI;f.uk=.45}
+    if(t===14||t===28||t===42){const side=t===28?(f.x>o.x?-1:1):(o.x>f.x?1:-1);if(blinkCut(f,o,side,7)==='deflect')return false}
+    if(t===22||t===36){f.upose=IAI;f.uk=.6}
+    if(t===52){f.upose=IAI;f.uk=.25}
+    return t>=62}},
+  petal:{name:'สวนราตรีบาน',lead:22,want:d=>d>60?.35:.15,run(f,o,t){ // a lingering flower field that drains life
+    if(t===1){f.upose=RAISE;f.uk=.35}
+    if(t===12){const tx=o.x;ufx.push({t:0,upd(){this.t++;
+        if(this.t%3===0)parts.push({x:tx+R(-110,110),y:GY-R(0,8),vx:R(-.3,.3),vy:-R(.6,1.6),life:RI(30,50),col:Math.random()<.3?'#fff':f.col,r:R(1.5,3),fl:1});
+        if(this.t%15===0&&Math.abs(o.x-tx)<110&&o.y>GY-60&&skillHit(f,o,3,o.x,o.y-60,1,null)==='hit'){f.hp=Math.min(100,f.hp+3);f.gh=Math.max(f.gh,f.hp);pop(f.x,f.y-150,'+3','#7dffa0')}
+        if(this.t>105)this.dead=1},
+        draw(){const a=Math.min(1,this.t/10)*Math.min(1,(105-this.t)/15);ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=a;
+          const g=ctx.createRadialGradient(tx,GY,0,tx,GY,115);g.addColorStop(0,f.col+'66');g.addColorStop(1,f.col+'00');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(tx,GY,115,26,0,0,7);ctx.fill();
+          ctx.strokeStyle=f.col;ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(tx,GY,110,24,0,0,7);ctx.stroke();
+          for(let i=0;i<9;i++){const px=tx-96+i*24+Math.sin(this.t*.05+i)*4,py=GY-2+(i%2)*6;ctx.fillStyle=f.col;ctx.beginPath();ctx.ellipse(px,py,6,2.6,this.t*.03+i,0,7);ctx.fill()}
+          ctx.restore()}})}
+    return t>=24}}
+};
+
 /* ---------- AI ---------- */
 function brain(f,o){
   if(!['idle','walk','air'].includes(f.st))return;
@@ -473,7 +539,7 @@ function brain(f,o){
   if((melee||pr)&&f.seen!==o.aid){
     f.seen=o.aid;const r=Math.random();
     if(r<f.pb){
-      const lead=melee?(A?A.w-o.t:SKILL[o.ult].lead-o.t):Math.max(1,Math.round((Math.abs(f.x-pr.x)-30)/8));
+      const lead=melee?(A?A.w-o.t:(o.big?SKILL2:SKILL)[o.ult].lead-o.t):Math.max(1,Math.round((Math.abs(f.x-pr.x)-30)/8));
       f.blockAt=G.f+Math.max(0,RI(-6,lead-1));f.blockDur=30;
     }else if(r<f.pb+f.agi){jump(f,pr?dir:-dir);return}
   }
@@ -483,7 +549,9 @@ function brain(f,o){
   if(f.counter){f.counter=false;if(d<150){atk(Math.random()<.5?'flick':'kesa');return}}
   if(f.cd>0){f.cd--;if(f.st==='walk'&&f.wd===dir&&d<125)idle(f);return}
   const r=Math.random();
-  if(f.en>=MANA&&(f.ultUsed||f.hp>=50||f.en>=100)&&r<SKILL[f.ult].want(d)){castSkill(f,o);return}
+  const spend=f.ultUsed||f.hp>=50||f.en>=100;
+  if(f.en>=2*MANA&&spend&&Math.random()<SKILL2[f.ult].want(d)*.8){castSkill(f,o,1);return}
+  if(f.en>=MANA&&f.en<2*MANA&&spend&&r<SKILL[f.ult].want(d)*.35){castSkill(f,o);return}
   if(d>135){
     if(d<290&&r<f.jumpy){jump(f,dir);return}
     f.st='walk';f.wd=dir;f.cd=RI(10,30);return;
@@ -506,7 +574,7 @@ function update(f,o,think){
     if(ATK[f.st]&&f.t>=A.end)idle(f);
   }
   switch(f.st){
-    case 'skill':if(SKILL[f.ult].run(f,o,f.t))idle(f);break;
+    case 'skill':if((f.big?SKILL2:SKILL)[f.ult].run(f,o,f.t))idle(f);break;
     case 'block':case 'parry':case 'recoil':if(f.t>=f.dur)idle(f);break;
     case 'hurt':if(f.t>=16&&f.y>=GY)idle(f);break;
     case 'walk':f.vx=f.wd*f.spd;f.ph+=.2*f.wd*f.s;break;
@@ -771,9 +839,9 @@ function render(){
     else{ctx.fillStyle=p.col;ctx.fillRect(p.x-p.r/2,p.y-p.r/2,p.r,p.r)}
   });
   ctx.globalAlpha=1;ctx.textAlign='center';ctx.textBaseline='middle';
-  pops.forEach(p=>{const c=p.big===2,sc=p.big&&p.t<6?(c?2.2-p.t*.2:1.6-p.t*.1):1;ctx.font=(c?64:p.big?30:22)*sc+'px '+FONT;ctx.globalAlpha=c?Math.min(1,(45-p.t)/12):1-p.t/45;
+  pops.forEach(p=>{const c=p.big===2,sc=p.big&&p.t<6?(c?2.2-p.t*.2:1.6-p.t*.1):1;ctx.font=(c?64:p.big===3?38:p.big?30:22)*sc+'px '+FONT;ctx.globalAlpha=c?Math.min(1,(45-p.t)/12):1-p.t/45;
     ctx.lineWidth=c?9:5;ctx.strokeStyle=c?'#2a0000':'#120a07';ctx.strokeText(p.txt,p.x,p.y);
-    if(c){ctx.shadowColor=p.col;ctx.shadowBlur=18;ctx.fillStyle=p.col}else ctx.fillStyle=p.col;ctx.fillText(p.txt,p.x,p.y);ctx.shadowBlur=0});
+    if(c||p.big===3){ctx.shadowColor=p.col;ctx.shadowBlur=18;ctx.fillStyle=p.col}else ctx.fillStyle=p.col;ctx.fillText(p.txt,p.x,p.y);ctx.shadowBlur=0});
   ctx.globalAlpha=1;ctx.restore();
   if(G.slowT>0){const v=ctx.createRadialGradient(W/2,H/2,H*.3,W/2,H/2,H*.9);v.addColorStop(0,'#0000');v.addColorStop(1,'#000a');ctx.fillStyle=v;ctx.fillRect(0,0,W,H)}
   if(G.dark>.01){const b=58*G.dark;ctx.fillStyle='#000';ctx.fillRect(0,0,W,b);ctx.fillRect(0,H-b,W,b)}
