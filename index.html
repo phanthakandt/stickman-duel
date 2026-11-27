@@ -195,11 +195,12 @@ const ROSTER=[
   {name:'โลหิตราชันย์',ult:'roar',stance:'oni',alt:['#e8e8f0','#5a5a6a'],col:'#e0142e',dark:'#5c0612',acc:'horns',style:'สายคลั่งโลหิต',desc:'คมดาบคริแน่นอน เกราะโลหิต คำรามคลั่ง',agg:.8,pb:0.29,agi:0.13,jumpy:.08,spd:2.6,pow:1.07},
   {name:'จันทราสะท้อน',ult:'mimic',stance:'seigan',alt:['#ffd6f0','#7a4a6a'],col:'#eef0ff',dark:'#5f6280',acc:'mask',style:'สายเงาสะท้อน',desc:'ทุกท่าสุ่มยืมมาจากนักดาบคนอื่น',agg:.66,pb:0.32,agi:.18,jumpy:.12,spd:2.7,pow:1.02},
   {name:'นทีสมุทร',ult:'tide',stance:'nagare',alt:['#7fffd4','#1f6f5f'],col:'#3d6cff',dark:'#122a7a',acc:'topknot',style:'สายวารี',desc:'บอลน้ำ น้ำพุพุ่ง คลื่นยักษ์ซัด',agg:0.67,pb:0.33,agi:.18,jumpy:.12,spd:2.7,pow:1.06},
-  {name:'บุปผามัจจุราช',ult:'bloom',stance:'hana',alt:['#ffd84a','#8a6a12'],col:'#e255e0',dark:'#7a1f78',acc:'thorn',style:'สายบุปผาพิษ',desc:'ดอกไม้ดูดเลือด ทางดอกไม้พิษทำให้เชื่องช้า',agg:.62,pb:.3,agi:.18,jumpy:.12,spd:2.7,pow:1}
+  {name:'บุปผามัจจุราช',ult:'bloom',stance:'hana',alt:['#ffd84a','#8a6a12'],col:'#e255e0',dark:'#7a1f78',acc:'thorn',style:'สายบุปผาพิษ',desc:'ดอกไม้ดูดเลือด ทางดอกไม้พิษทำให้เชื่องช้า',agg:.62,pb:.3,agi:.18,jumpy:.12,spd:2.7,pow:1},
+  {name:'เหมันต์ธารา',ult:'glacier',stance:'yuki',alt:['#d6c2ff','#5a4a99'],col:'#a8f0ff',dark:'#2a7a99',acc:'icicle',style:'สายเหมันต์',desc:'สะสมแต้มน้ำแข็งครบ 5 แล้วแตกระเบิด แช่แข็งศัตรู',agg:.66,pb:.34,agi:.16,jumpy:.1,spd:2.7,pow:1.06}
 ];
 let fxsDummy=0,F=[],projs=[],parts=[],pops=[],G={f:0},logItems=[],picks=[0,1],slot=0,selecting=true;
 function mk(i,r){const o=Object.assign({id:i,wins:0,ultCd:0},ROSTER[r]);if(i===1&&picks[0]===picks[1]){o.col=o.alt[0];o.dark=o.alt[1];o.name+=' II'}return o}
-function resetF(f){Object.assign(f,{rage:0,slow:0,poison:0,poisonSrc:null,shield:0,shieldT:0,critNext:false,rooted:0,fireBlade:0,fireBody:0,burn:0,burnSrc:null,ultUsed:false,fl:0,upose:null,blockAt:0,counter:false,trail:[],x:f.id?660:300,y:GY,vx:0,vy:0,s:f.id?-1:1,hp:100,gh:100,en:0,st:'idle',t:0,cd:RI(20,40),hit:false,p:null,ph:0,wd:1,aid:0,seen:-1,used:false,dur:0})}
+function resetF(f){Object.assign(f,{rage:0,slow:0,frost:0,frostT:0,frostSrc:null,iceBlade:0,frozen:0,frozenSrc:null,poison:0,poisonSrc:null,shield:0,shieldT:0,critNext:false,rooted:0,fireBlade:0,fireBody:0,burn:0,burnSrc:null,ultUsed:false,fl:0,upose:null,blockAt:0,counter:false,trail:[],x:f.id?660:300,y:GY,vx:0,vy:0,s:f.id?-1:1,hp:100,gh:100,en:0,st:'idle',t:0,cd:RI(20,40),hit:false,p:null,ph:0,wd:1,aid:0,seen:-1,used:false,dur:0})}
 const set=(f,st)=>{f.st=st;f.t=0;f.hit=false;f.hd=0};
 const idle=f=>set(f,'idle');
 
@@ -221,7 +222,8 @@ const ST={
   oni:[.25,26,8,1.45,.7,.2,-.6,-.8],
   seigan:[.08,22,-8,2.3,.5,.1,-.35,-.55],
   nagare:[.15,24,30,1.4,.6,.15,-.45,-.65],
-  hana:[.12,-4,20,2.6,.55,.12,-.4,-.6]
+  hana:[.12,-4,20,2.6,.55,.12,-.4,-.6],
+  yuki:[.1,24,14,1.8,.55,.12,-.4,-.6]
 };
 const ATK={
   // four normal cuts, light to heavy
@@ -388,6 +390,8 @@ const SFX={
     lf.frequency.value=23;lg.gain.value=9;lf.connect(lg);lg.connect(o.frequency);lp.type='lowpass';lp.frequency.setValueAtTime(900,t);lp.frequency.exponentialRampToValueAtTime(300,t+1.3);env(g,t,.06,.7,1.3);o.connect(lp);lp.connect(g);g.connect(SFXG);g.connect(REV);o.start(t);lf.start(t);o.stop(t+1.5);lf.stop(t+1.5);
     nz(t,{type:'bandpass',f:[[0,500],[1.2,250]],q:1.2,a:.06,d:1.2,peak:.6,rev:1});thump(t,55,1,.8)},
   shatter(){const t=AC.currentTime;for(let k=0;k<6;k++)nz(t+k*.025,{type:'bandpass',f:[[0,R(2500,6000)]],q:4,d:.12,peak:.4});nz(t,{type:'lowpass',f:[[0,1500],[.3,200]],d:.3,peak:.4})},
+  frost(){const t=AC.currentTime;nz(t,{type:'highpass',f:[[0,6000],[.3,3500]],q:.7,a:.03,d:.3,peak:.22});nz(t,{f:[[0,1800],[.3,900]],q:1,a:.03,d:.25,peak:.12})},
+  freeze(){const t=AC.currentTime;for(let k=0;k<7;k++)nz(t+k*.03,{type:'bandpass',f:[[0,R(3000,7000)]],q:5,d:.08,peak:.35});steel(t+.05,620,1.2,.12,1,.8);thump(t,70,.4,.5)},
   bloom(){const t=AC.currentTime;[659,784,988,1319].forEach((fr,k)=>tone(t+k*.05,'sine',fr,fr*1.01,.5,.08,SFXG,1,.01));nz(t,{type:'bandpass',f:[[0,3000],[.3,5000]],q:1.5,a:.02,d:.25,peak:.12})},
   rustle(){const t=AC.currentTime;for(let k=0;k<5;k++)nz(t+k*.05,{type:'bandpass',f:[[0,R(2500,5000)]],q:1.5,a:.02,d:.12,peak:.22})}
 };
@@ -441,7 +445,7 @@ function strike(f,o,A){
   if(o.st==='ko')return;
   const dx=(o.x-f.x)*f.s;
   if(dx<-10||dx>A.rg||Math.abs(o.y-f.y)>80)return;
-  f.hit=true;const dmg=Math.round(R(A.dmg[0],A.dmg[1])*f.pow*weak(f));
+  f.hit=true;const dmg=Math.round(R(A.dmg[0],A.dmg[1])*f.pow*weak(f)*(f.iceBlade>0?1.15:1));
   // blades meet mid-swing
   const OA=ATK[o.st];if(OA&&OA.rg>0&&o.t>=OA.w-4&&o.t<OA.w+OA.sf+2&&!o.hit&&o.s===-f.s){
     o.hit=true;const cx=(f.x+o.x)/2,cy=Math.min(f.y,o.y)-100;
@@ -468,11 +472,13 @@ function strike(f,o,A){
   else pop(hx,hy-14,'-'+(o.fireBody>0?Math.max(1,Math.round(dd*ARMOR))+' เกราะ':dd),'#fff');
   slashFx(hx,hy,(A.B[3]>2?-.9:A.B[3]<.8?-1:.7)*f.s,f.col);
   if(f.fireBlade>0)ignite(f,o,180);
+  if(f.iceBlade>0)addFrost(f,o,1);
   if(!crit){G.hitstop=Math.round(4+4*(A.aw||1));G.shake=3+6*(A.aw||1)}
   f.en=Math.min(100,f.en+dd*3);o.en=Math.min(100,o.en+dd*2);
   if(o.hp<=0)ko(f,o);
 }
 function ko(f,o){
+  if(G.winner)return; // already decided this round
   sfx('ko');o.hp=0;set(o,'ko');o.vx=f.s*9;o.vy=-9;f.wins++;projs=[];
   G.phase='ko';G.pt=0;G.slowT=50;G.hitstop=14;G.shake=14;G.winner=f;
   msg('K.O.!',150);burst(o.x,o.y-70,'#fff',30,7);burst(o.x,o.y-70,f.col,24,6);
@@ -770,6 +776,15 @@ const ULT={
     if(e===82)cut(f,o,0,6,1);
     return e>=115;
   },
+  glacier(f,o,e){ // เหมันต์ธารา: a glacier swallows the foe, freezing them solid while the cold bites
+    if(e===0){set(f,'ult');f.upose=[.3,30,30,1.2,.75,.22,-.55,-.75];f.uk=.4}
+    if(e===6){sfx('frost');ufx.push(iceTrail(f,f.x+f.s*40,o.x))}
+    if(e===26){sfx('freeze');props.push(glacier(f,o,o.x,230));o.frozen=Math.max(o.frozen||0,200);o.frozenSrc=f;o.vx=0;o.fl=4;flashFx(o.x,o.y-80,140);G.shake=12;pop(o.x,o.y-200,'ตัวแข็ง!',f.col,3)}
+    if(e>=40&&e<100&&e%12===0)ultHit(f,o,3,0,o.x+R(-16,16),o.y-90+R(-30,30));
+    if(e===104){ultHit(f,o,10,0);flashFx(o.x,o.y-90,150);G.shake=14;addFrost(f,o,2);if(o.hp<=0)ko(f,o)}
+    if(e===96){f.upose=ST.yuki;f.uk=.3}
+    return e>=124;
+  },
   bloom(f,o,e){ // บุปผามัจจุราช: a giant flower and a field of small ones; the foe is left slowed and poisoned
     if(e===0){set(f,'ult');f.upose=RAISE;f.uk=.3}
     if(e===8){props.push(garden(f,clampX(o.x)));sfx('bloom');sfx('rustle');G.shake=8;erupt(clampX(o.x),f)}
@@ -895,6 +910,11 @@ const SKILL={
       const r=skillHit(f,o,9,o.x,o.y-90,6,x1);if(r==='hit')slashFx(o.x,o.y-90,R(-1,1),f.col);if(r==='deflect'){set(f,'recoil');f.dur=26}}
     if(t===26){f.s=o.x>f.x?1:-1;f.upose=IAI;f.uk=.3}
     return t>=36}},
+  glacier:{name:'ไอเหมันต์',lead:12,want:d=>d<220?.45:.05,run(f,o,t){ // a breath of freezing mist; a hit adds one frost stack
+    if(t===1){f.upose=[.3,8,28,-1.1,.75,.22,-.55,-.75];f.uk=.4}
+    if(t>=8&&t<30){const mx=f.x+f.s*30,my=f.y-120;if(t%7===1)sfx('frost');for(let i=0;i<5;i++)frostP(f,mx,my+R(-4,4),f.s*R(8,13),R(-1.6,1.6)+.4,R(3,7),RI(18,28))}
+    if(t===14||t===24){const inR=(o.x-f.x)*f.s>-10&&Math.abs(o.x-f.x)<250&&o.y>GY-130;if(inR&&skillHit(f,o,8,o.x,o.y-100,2,f.x)==='hit')addFrost(f,o,1)}
+    return t>=36}},
   bloom:{name:'บุปผาสูบโลหิต',lead:14,want:d=>d<320?.35:.12,run(f,o,t){ // a flower takes root on the foe and drains their life into the caster
     if(t===1){f.upose=[.1,20,-10,2.4,.5,.1,-.4,-.6];f.uk=.45}
     if(t===12){f.upose=[.3,36,4,1.57,...LL];f.uk=.9;sfx('bloom');for(let i=0;i<10;i++)parts.push({x:o.x+R(-20,20),y:o.y-R(90,140),vx:R(-1,1),vy:-R(.5,1.5),life:RI(16,26),col:f.col,r:R(2,3),fl:1});
@@ -960,6 +980,35 @@ function garden(f,cx){const small=Array.from({length:32},()=>{const x=R(20,W-20)
       ctx.fillStyle='#c98a00';for(let i=0;i<10;i++){const a=i/10*6.28+rot*3,rd=(8+6*open)*g;ctx.beginPath();ctx.arc(cx+Math.cos(a)*rd,hy+Math.sin(a)*rd,2*g,0,7);ctx.fill()}
       ctx.restore()}};
 }
+/* ---------- ice (เหมันต์ธารา): frost stacks that shatter at 5, an ice-coated blade, freezing ---------- */
+const FROST_MAX=5;
+function frostP(f,x,y,vx,vy,r,life){parts.push({x,y,vx,vy,r,life,max:life,fire:1,fl:1,pal:['#ffffff','#d8f7ff',f.col],col:f.col})}
+function addFrost(f,o,n){if(o.st==='ko'||!(G.phase==='fight'))return;o.frost=(o.frost||0)+n;o.frostT=1200;o.frostSrc=f;
+  if(o.frost>=FROST_MAX){o.frost=0;o.frostT=0;iceBurst(f,o)}else pop(o.x+R(-8,8),o.y-196,'น้ำแข็ง '+o.frost+'/'+FROST_MAX,f.col)}
+function iceBurst(f,o){monoRun(f.ult==='mimic',()=>{ // five stacks: the ice on the foe bursts apart
+  sfx('shatter');sfx('boom');const d=Math.round(42*f.pow);hurtHp(o,d);o.fl=6;o.frozen=0;
+  pop(o.x,o.y-120,''+d,f.col,2);pop(o.x,o.y-200,'น้ำแข็งแตก!',f.col,3);flashFx(o.x,o.y-90,170);fxs.push({ty:'ring',x:o.x,y:GY,col:f.col,t:0,life:34,big:1});
+  for(let i=0;i<46;i++){const a=R(0,6.28),v=R(3,11);parts.push({x:o.x+R(-14,14),y:o.y-R(30,140),vx:Math.cos(a)*v,vy:Math.sin(a)*v-2,life:RI(18,36),col:Math.random()<.5?'#ffffff':f.col,r:R(1.5,3.2),sp:1})}
+  G.shake=Math.max(G.shake,14);G.hitstop=Math.max(G.hitstop,10);if(o.hp<=0)ko(f,o)})}
+function iceTick(f){
+  if(f.iceBlade>0){f.iceBlade--;if(f.gripW&&f.tipW&&G.f%3===0){const u=R(.15,1);monoRun(f.ult==='mimic',()=>parts.push({x:f.gripW[0]+(f.tipW[0]-f.gripW[0])*u,y:f.gripW[1]+(f.tipW[1]-f.gripW[1])*u,vx:R(-.3,.3),vy:R(.2,.8),life:RI(16,26),col:Math.random()<.5?'#ffffff':f.col,r:R(1.5,2.5),fl:1}))}}
+  if(f.frost>0&&--f.frostT<=0)f.frost=0;
+  if(f.frozen>0){f.frozen--;f.vx=0;if(f.vy<0)f.vy=0;const src=f.frozenSrc||f;
+    if(f.st!=='ko'&&f.st!=='hurt'&&f.st!=='stun')set(f,'stun');
+    if(f.frozen%20===0&&f.frozen>0&&!G.ult&&G.phase==='fight'&&f.st!=='ko'){hurtHp(f,2);pop(f.x+R(-12,12),f.y-130,'2',src.col);if(f.hp<=0)ko(src,f)}
+    if(f.frozen===0&&f.st==='stun'&&!G.ult)idle(f)}
+}
+function glacier(f,o,x,life){const ks=Array.from({length:11},(_,i)=>({dx:(i-5)*13+R(-5,5),h:R(70,175)*(1-Math.abs(i-5)/8),w:R(12,20),lean:R(-.25,.25)}));
+  return{t:0,life,upd(){this.t++;if(this.t%5===0&&this.t<this.life-20)parts.push({x:x+R(-60,60),y:GY-R(0,150),vx:R(-.3,.3),vy:-R(.2,.6),life:RI(26,40),col:'#e8fbff',r:R(1,2),fl:1});
+      if(this.t>=this.life){this.dead=1;sfx('shatter');for(let i=0;i<30;i++){const a=R(Math.PI,Math.PI*2),v=R(2,7);parts.push({x:x+R(-50,50),y:GY-R(10,120),vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:RI(16,30),col:Math.random()<.5?'#ffffff':f.col,r:R(1.5,3),sp:1})}}},
+    draw(){const g=Math.min(1,this.t/12),a=Math.min(1,(this.life-this.t)/16);ctx.save();ctx.globalAlpha=a;
+      ks.forEach(k=>{const h=k.h*g,bx=x+k.dx,tx=bx+Math.sin(k.lean)*h;const gr=ctx.createLinearGradient(0,GY-h,0,GY);gr.addColorStop(0,'rgba(240,252,255,.9)');gr.addColorStop(1,'rgba(120,200,240,.55)');
+        ctx.fillStyle=gr;ctx.beginPath();ctx.moveTo(bx-k.w/2,GY);ctx.lineTo(tx,GY-h);ctx.lineTo(bx+k.w/2,GY);ctx.closePath();ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=1.5;ctx.stroke();ctx.beginPath();ctx.moveTo(bx-k.w*.15,GY-4);ctx.lineTo(tx,GY-h+6);ctx.strokeStyle='rgba(255,255,255,.45)';ctx.stroke()});
+      ctx.restore()}}}
+function iceTrail(f,x0,x1){const dir=Math.sign(x1-x0)||f.s,n=Math.max(2,Math.floor(Math.abs(x1-x0)/34));return{t:0,upd(){this.t++;if(this.t%2===0&&this.t/2<=n){sfx('rustle');const xx=x0+dir*34*(this.t/2);for(let i=0;i<4;i++)parts.push({x:xx+R(-8,8),y:GY-2,vx:R(-1.5,1.5),vy:-R(1,4),life:RI(12,22),col:'#e8fbff',r:R(1.5,3),sp:1})}if(this.t>n*2+40)this.dead=1},
+  draw(){const k=Math.min(n,Math.floor(this.t/2)),a=Math.min(1,(n*2+40-this.t)/20);ctx.save();ctx.globalAlpha=a;for(let i=1;i<=k;i++){const xx=x0+dir*34*i,h=18+i*4;
+    ctx.fillStyle='rgba(200,240,255,.8)';ctx.beginPath();ctx.moveTo(xx-8,GY);ctx.lineTo(xx+dir*4,GY-h);ctx.lineTo(xx+8,GY);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke()}ctx.restore()}}}
 /* ---------- big skills: two thirds of mana, one per sword ---------- */
 function ember(f,o,x0,x1){return{t:0,x:x0,y:GY-40,upd(){this.t++;const u=Math.min(1,this.t/26);this.x=x0+(x1-x0)*u;this.y=GY-40-Math.sin(u*Math.PI)*110+u*40;
     if(this.t%2)parts.push({x:this.x,y:this.y,vx:R(-.4,.4),vy:-R(.5,1.5),life:14,col:f.col,r:R(1.5,3),fl:1});
@@ -1033,6 +1082,10 @@ const SKILL2={
     if(t===22||t===36){f.upose=IAI;f.uk=.6}
     if(t===52){f.upose=IAI;f.uk=.25}
     return t>=62}},
+  glacier:{name:'ดาบเหมันต์',lead:99,want:(d,f)=>f.iceBlade>0?0:d<260?.5:.2,run(f,o,t){ // coat the blade in ice: every landed cut adds a frost stack
+    if(t===1){f.upose=[0,10,-6,3.05,.5,.1,-.4,-.6];f.uk=.4}
+    if(t===12){sfx('freeze');f.iceBlade=600;if(f.gripW&&f.tipW)for(let i=0;i<24;i++){const u=Math.random();parts.push({x:f.gripW[0]+(f.tipW[0]-f.gripW[0])*u,y:f.gripW[1]+(f.tipW[1]-f.gripW[1])*u,vx:R(-2,2),vy:R(-2,1),life:RI(18,28),col:Math.random()<.5?'#ffffff':f.col,r:R(1.5,3),sp:1})}flashFx(f.tipW?f.tipW[0]:f.x,f.tipW?f.tipW[1]:f.y-120,60)}
+    return t>=24}},
   bloom:{name:'วิถีบุปผาพิษ',lead:10,want:d=>d>50&&d<380?.38:.1,run(f,o,t){ // a cut that seeds a line of poison flowers along the ground
     if(t===1){f.upose=ATK.kesa.A;f.uk=.5}
     if(t===10){f.upose=ATK.kesa.B;f.uk=1;arcFx(f,ATK.kesa);sfx('bloom');const dir=f.s,x0=f.x,grp={};for(let k=0;k<7;k++)props.push(trapFlower(f,o,clampX(x0+dir*(60+k*48)),k*4,grp))}
@@ -1119,6 +1172,7 @@ function update(f,o,think){
   if(f.gh>f.hp)f.gh=Math.max(f.hp,f.gh-.5);
   if(G.phase==='fight')f.en=Math.min(100,f.en+.05);
   fireTick(f,o);
+  iceTick(f);
   if(f.rooted>0){f.rooted--;f.vx=0}
   if(f.rage>0){if(G.phase==='fight'&&!G.ult)f.rage--;if(G.f%2===0)monoRun(f.ult==='mimic',()=>parts.push({x:f.x+R(-20,20),y:f.y-R(10,130),vx:R(-.4,.4),vy:-R(1,2.5),life:RI(16,28),col:Math.random()<.5?f.col:'#ff8a8a',r:R(1.5,3),fl:1}))}
   if(f.shieldT>0){f.shieldT--;if(f.shieldT<=0&&f.shield>0){f.shield=0;shatter(f)}}
@@ -1233,7 +1287,7 @@ function ik(S,T,a,b){
 const BLADE=98;
 function drawFighter(f){
   const [tg,k]=target(f);if(!f.p)f.p={...tg};
-  K.forEach(key=>f.p[key]+=(tg[key]-f.p[key])*k);
+  if(!(f.frozen>0))K.forEach(key=>f.p[key]+=(tg[key]-f.p[key])*k); // frozen: pose locks in place
   const p=f.p,s=f.s,L=a=>Math.cos(a)*30;
   const hgt=Math.max(0,GY-f.y);ctx.fillStyle=`rgba(10,4,2,${.5-Math.min(.3,hgt/400)})`;
   ctx.beginPath();ctx.ellipse(f.x,GY+3,30-Math.min(14,hgt/12),6,0,0,7);ctx.fill();
@@ -1314,12 +1368,18 @@ function drawFighter(f){
     ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(hx-s*11,hy-6);ctx.quadraticCurveTo(hx-s*24,hy-9+wv,hx-s*34,hy-2+wv*1.5);ctx.moveTo(hx-s*11,hy-5);ctx.quadraticCurveTo(hx-s*22,hy-2+wv,hx-s*30,hy+6+wv*1.3);ctx.stroke();
     ctx.fillStyle='#1f3d1a';for(const dx of [-8,-2,4,10]){ctx.beginPath();ctx.moveTo(hx+s*dx-2,hy-8);ctx.lineTo(hx+s*dx,hy-13);ctx.lineTo(hx+s*dx+2,hy-8);ctx.fill()}
     ctx.fillStyle=flash?'#fff':f.col;ctx.fillRect(hx-s*12-2,hy-8,4,4)}
+  if(f.acc==='icicle'){[[-9,-6,-2.4,13],[-12,2,-2.0,11],[-4,-12,-2.8,10]].forEach(([dx,dy,a,l])=>{ctx.save();ctx.translate(hx+s*dx,hy+dy);ctx.rotate(a*s);ctx.beginPath();ctx.moveTo(-3,0);ctx.lineTo(0,-l);ctx.lineTo(3,0);ctx.closePath();ctx.fillStyle=flash?'#fff':f.col;ctx.fill();ctx.strokeStyle=rim;ctx.lineWidth=1.5;ctx.stroke();ctx.restore()})}
+  if(f.frost>0){const sc=f.frostSrc&&f.frostSrc.ult==='mimic'?'#dddddd':(f.frostSrc||f).col;for(let i=0;i<FROST_MAX;i++){const px=hx+(i-2)*11,py=hy-30;ctx.beginPath();ctx.moveTo(px,py-6);ctx.lineTo(px+4,py);ctx.lineTo(px,py+6);ctx.lineTo(px-4,py);ctx.closePath();
+    ctx.fillStyle=i<f.frost?sc:'#0008';ctx.fill();ctx.strokeStyle=i<f.frost?'#fff':sc+'88';ctx.lineWidth=1.2;ctx.stroke()}}
   if(f.shield>0){const sa=Math.min(1,f.shieldT/30);ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=sa*(.55+.2*Math.sin(G.f*.25));ctx.strokeStyle=f.col;ctx.lineWidth=3;ctx.shadowColor=f.col;ctx.shadowBlur=18;
     ctx.beginPath();for(let k=0;k<=6;k++){const a=k/6*Math.PI*2+Math.PI/6,px=hip[0]+Math.cos(a)*52,py=hip[1]-36+Math.sin(a)*92;k?ctx.lineTo(px,py):ctx.moveTo(px,py)}ctx.stroke();
     ctx.globalAlpha=sa*.12;ctx.fillStyle=f.col;ctx.fill();ctx.restore()}
   ctx.shadowColor=f.col;ctx.shadowBlur=8;ctx.fillStyle=flash?'#000':f.col;
   if(f.st==='ko')ctx.fillRect(hx+s*4-3,hy-1,6,1.5);else ctx.fillRect(s>0?hx+2:hx-9,hy-2,7,2.5);
   ctx.shadowBlur=0;
+  if(f.frozen>0){const a=Math.min(1,f.frozen/20);ctx.save();ctx.globalAlpha=a;ctx.fillStyle='rgba(170,235,255,.3)';ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=2; // block of ice
+    ctx.beginPath();ctx.moveTo(-36,2);ctx.lineTo(-40,-120);ctx.lineTo(-22,-176);ctx.lineTo(18,-182);ctx.lineTo(40,-130);ctx.lineTo(36,2);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(-26,-150);ctx.lineTo(-8,-170);ctx.moveTo(-30,-110);ctx.lineTo(4,-160);ctx.stroke();ctx.restore()}
   ctx.restore();
 }
 function drawFx(e){
@@ -1497,6 +1557,7 @@ const ICON={
   roar:'<path d="M12 3c3 5 6 8 6 12a6 6 0 0 1-12 0c0-4 3-7 6-12z"/><path d="M10 15l2 2l2-2"/>',
   tide:'<path d="M2 15c3-4 5-4 7 0s4 4 7 0s4-4 6 0M2 20c3-3 5-3 7 0s4 3 7 0s4-3 6 0M8 10c0-4 4-7 8-6c-3 1-4 3-3 6"/>',
   bloom:'<circle cx="12" cy="8" r="2"/><path d="M12 6c-1-3 1-4 0-4M12 10v12M12 16c-3-1-5 0-6 2M12 18c3-1 5 0 6 2M9 7c-3-1-4 2-2 3c1 1 3 0 5-2M15 7c3-1 4 2 2 3c-1 1-3 0-5-2"/>',
+  glacier:'<path d="M12 2v20M3.5 7l17 10M3.5 17l17-10M9 4l3 3l3-3M9 20l3-3l3 3"/>',
   mimic:'<path d="M14 3a9 9 0 1 0 7 13a7 7 0 0 1-7-13z"/><path d="M16 8l2 2M18 6l1 1"/>'
 };
 const MANA_TXT=['สกิล 1 · ใช้มานา 1 ช่อง','สกิล 2 · ใช้มานา 2 ช่อง','ท่าไม้ตาย · มานาเต็มและเลือดต่ำกว่า 40% · คูลดาวน์ 40 วิ'];
@@ -1513,6 +1574,7 @@ const SKTXT={
   roar:[['คมโลหิต','ชุบดาบด้วยเลือด ฟันโดนครั้งต่อไปคริติคอลแน่นอน'],['เกราะโลหิต','สร้างเกราะเลือดรับดาเมจแทน อยู่ได้ 8 วินาทีหรือจนแตก'],['คำรามโลหิต','คำรามกระแทกคู่ต่อสู้กระเด็น แล้วเข้าสู่ร่างคลั่ง 8 วินาที ทุกดาบคริติคอลและทะลวงการปัด']],
   tide:[['บอลวารี','ยิงลูกน้ำหมุนพุ่งไปข้างหน้า'],['น้ำพุทะลวง','น้ำพุพุ่งขึ้นจากใต้เท้าคู่ต่อสู้ ดีดให้ลอยแล้วซัดซ้ำกลางอากาศ'],['คลื่นยักษ์','คลื่นยักษ์ซัดคู่ต่อสู้ไปทั้งตัว แล้วกระแทกเข้ากับขอบสนาม']],
   bloom:[['บุปผาสูบโลหิต','ดอกไม้งอกบนตัวคู่ต่อสู้ ดูดเลือดทีละน้อยมาเติมให้ตัวเองราว 3 วินาที'],['วิถีบุปผาพิษ','ฟันแล้วดอกไม้งอกเป็นแนวไปข้างหน้า ใครเหยียบจะเชื่องช้าและติดพิษ (ติดพิษ = ช้าลงหนักและตีเบาลง 30%)'],['สวนบุปผาพิษ','ดอกไม้ยักษ์และดอกเล็กๆ งอกเต็มสนาม คู่ต่อสู้เชื่องช้า 4 วินาทีและติดพิษ 4 วินาที']],
+  glacier:[['ไอเหมันต์','พ่นไอเย็นเป็นสายไปข้างหน้า โดนแล้วได้รับดาเมจและติดแต้มน้ำแข็ง 1 แต้ม (สะสมครบ 5 แต้ม น้ำแข็งจะแตกระเบิดใส่ตัวศัตรู ดาเมจรุนแรง)'],['ดาบเหมันต์','เคลือบดาบด้วยน้ำแข็ง 7 วินาที ฟันโดนทุกครั้งเพิ่มแต้มน้ำแข็ง 1 แต้ม'],['ธารน้ำแข็ง','ธารน้ำแข็งงอกขึ้นกลืนตัวคู่ต่อสู้ ตัวแข็งขยับไม่ได้ราว 3 วินาที โดนความเย็นกัดเสียเลือดต่อเนื่อง ปิดท้ายด้วยแต้มน้ำแข็งอีก 2 แต้ม']],
   mimic:[['เงาสะท้อน','สุ่มยืมสกิล 1 ของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ'],['เงาสะท้อนคู่','สุ่มยืมสกิล 2 ของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ'],['จันทร์สะท้อนพลัง','สุ่มยืมท่าไม้ตายของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ']]
 };
 const skIcons=r=>`<span class="sks">${[0,1,2].map(k=>`<span class="sk${k===2?' u':''}" role="button" tabindex="0" data-sk="${r.ult}:${k}" style="--c:${r.col}" aria-label="${SKTXT[r.ult][k][0]}"><i><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[r.ult]}</svg></i>${k===2?'ไม้ตาย':'สกิล '+(k+1)}</span>`).join('')}</span>`;
