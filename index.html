@@ -196,7 +196,7 @@ const ROSTER=[
   {name:'จันทราสะท้อน',ult:'mimic',stance:'seigan',alt:['#ffd6f0','#7a4a6a'],col:'#eef0ff',dark:'#5f6280',acc:'mask',style:'สายเงาสะท้อน',desc:'ทุกท่าสุ่มยืมมาจากนักดาบคนอื่น',agg:.66,pb:0.32,agi:.18,jumpy:.12,spd:2.7,pow:1.02},
   {name:'นทีสมุทร',ult:'tide',stance:'nagare',alt:['#7fffd4','#1f6f5f'],col:'#3d6cff',dark:'#122a7a',acc:'topknot',style:'สายวารี',desc:'บอลน้ำ น้ำพุพุ่ง คลื่นยักษ์ซัด',agg:0.67,pb:0.33,agi:.18,jumpy:.12,spd:2.7,pow:1.06},
   {name:'บุปผามัจจุราช',ult:'bloom',stance:'hana',alt:['#ffd84a','#8a6a12'],col:'#e255e0',dark:'#7a1f78',acc:'thorn',style:'สายบุปผาพิษ',desc:'ดอกไม้ดูดเลือด ทางดอกไม้พิษทำให้เชื่องช้า',agg:.62,pb:.3,agi:.18,jumpy:.12,spd:2.7,pow:1},
-  {name:'เหมันต์ธารา',ult:'glacier',stance:'yuki',alt:['#d6c2ff','#5a4a99'],col:'#a8f0ff',dark:'#2a7a99',acc:'icicle',style:'สายเหมันต์',desc:'สะสมแต้มน้ำแข็งครบ 5 แล้วแตกระเบิด แช่แข็งศัตรู',agg:.66,pb:.34,agi:.16,jumpy:.1,spd:2.7,pow:1.06}
+  {name:'เหมันต์ธารา',ult:'glacier',stance:'yuki',alt:['#d6c2ff','#5a4a99'],col:'#a8f0ff',dark:'#2a7a99',acc:'icicle',style:'สายเหมันต์',desc:'สะสมแต้มน้ำแข็งครบ 3 แล้วแตกระเบิด แช่แข็งศัตรู',agg:.66,pb:.34,agi:.16,jumpy:.1,spd:2.7,pow:1.06}
 ];
 let fxsDummy=0,F=[],projs=[],parts=[],pops=[],G={f:0},logItems=[],picks=[0,1],slot=0,selecting=true;
 function mk(i,r){const o=Object.assign({id:i,wins:0,ultCd:0},ROSTER[r]);if(i===1&&picks[0]===picks[1]){o.col=o.alt[0];o.dark=o.alt[1];o.name+=' II'}return o}
@@ -981,12 +981,12 @@ function garden(f,cx){const small=Array.from({length:32},()=>{const x=R(20,W-20)
       ctx.restore()}};
 }
 /* ---------- ice (เหมันต์ธารา): frost stacks that shatter at 5, an ice-coated blade, freezing ---------- */
-const FROST_MAX=5;
+const FROST_MAX=3;
 function frostP(f,x,y,vx,vy,r,life){parts.push({x,y,vx,vy,r,life,max:life,fire:1,fl:1,pal:['#ffffff','#d8f7ff',f.col],col:f.col})}
 function addFrost(f,o,n){if(o.st==='ko'||!(G.phase==='fight'))return;o.frost=(o.frost||0)+n;o.frostT=1200;o.frostSrc=f;
   if(o.frost>=FROST_MAX){o.frost=0;o.frostT=0;iceBurst(f,o)}else pop(o.x+R(-8,8),o.y-196,'น้ำแข็ง '+o.frost+'/'+FROST_MAX,f.col)}
-function iceBurst(f,o){monoRun(f.ult==='mimic',()=>{ // five stacks: the ice on the foe bursts apart
-  sfx('shatter');sfx('boom');const d=Math.round(42*f.pow);hurtHp(o,d);o.fl=6;o.frozen=0;
+function iceBurst(f,o){monoRun(f.ult==='mimic',()=>{ // a full set of stacks: the ice on the foe bursts apart
+  sfx('shatter');sfx('boom');const d=Math.round(32*f.pow);hurtHp(o,d);o.fl=6;o.frozen=0;
   pop(o.x,o.y-120,''+d,f.col,2);pop(o.x,o.y-200,'น้ำแข็งแตก!',f.col,3);flashFx(o.x,o.y-90,170);fxs.push({ty:'ring',x:o.x,y:GY,col:f.col,t:0,life:34,big:1});
   for(let i=0;i<46;i++){const a=R(0,6.28),v=R(3,11);parts.push({x:o.x+R(-14,14),y:o.y-R(30,140),vx:Math.cos(a)*v,vy:Math.sin(a)*v-2,life:RI(18,36),col:Math.random()<.5?'#ffffff':f.col,r:R(1.5,3.2),sp:1})}
   G.shake=Math.max(G.shake,14);G.hitstop=Math.max(G.hitstop,10);if(o.hp<=0)ko(f,o)})}
@@ -1369,7 +1369,7 @@ function drawFighter(f){
     ctx.fillStyle='#1f3d1a';for(const dx of [-8,-2,4,10]){ctx.beginPath();ctx.moveTo(hx+s*dx-2,hy-8);ctx.lineTo(hx+s*dx,hy-13);ctx.lineTo(hx+s*dx+2,hy-8);ctx.fill()}
     ctx.fillStyle=flash?'#fff':f.col;ctx.fillRect(hx-s*12-2,hy-8,4,4)}
   if(f.acc==='icicle'){[[-9,-6,-2.4,13],[-12,2,-2.0,11],[-4,-12,-2.8,10]].forEach(([dx,dy,a,l])=>{ctx.save();ctx.translate(hx+s*dx,hy+dy);ctx.rotate(a*s);ctx.beginPath();ctx.moveTo(-3,0);ctx.lineTo(0,-l);ctx.lineTo(3,0);ctx.closePath();ctx.fillStyle=flash?'#fff':f.col;ctx.fill();ctx.strokeStyle=rim;ctx.lineWidth=1.5;ctx.stroke();ctx.restore()})}
-  if(f.frost>0){const sc=f.frostSrc&&f.frostSrc.ult==='mimic'?'#dddddd':(f.frostSrc||f).col;for(let i=0;i<FROST_MAX;i++){const px=hx+(i-2)*11,py=hy-30;ctx.beginPath();ctx.moveTo(px,py-6);ctx.lineTo(px+4,py);ctx.lineTo(px,py+6);ctx.lineTo(px-4,py);ctx.closePath();
+  if(f.frost>0){const sc=f.frostSrc&&f.frostSrc.ult==='mimic'?'#dddddd':(f.frostSrc||f).col;for(let i=0;i<FROST_MAX;i++){const px=hx+(i-(FROST_MAX-1)/2)*12,py=hy-30;ctx.beginPath();ctx.moveTo(px,py-6);ctx.lineTo(px+4,py);ctx.lineTo(px,py+6);ctx.lineTo(px-4,py);ctx.closePath();
     ctx.fillStyle=i<f.frost?sc:'#0008';ctx.fill();ctx.strokeStyle=i<f.frost?'#fff':sc+'88';ctx.lineWidth=1.2;ctx.stroke()}}
   if(f.shield>0){const sa=Math.min(1,f.shieldT/30);ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=sa*(.55+.2*Math.sin(G.f*.25));ctx.strokeStyle=f.col;ctx.lineWidth=3;ctx.shadowColor=f.col;ctx.shadowBlur=18;
     ctx.beginPath();for(let k=0;k<=6;k++){const a=k/6*Math.PI*2+Math.PI/6,px=hip[0]+Math.cos(a)*52,py=hip[1]-36+Math.sin(a)*92;k?ctx.lineTo(px,py):ctx.moveTo(px,py)}ctx.stroke();
@@ -1574,7 +1574,7 @@ const SKTXT={
   roar:[['คมโลหิต','ชุบดาบด้วยเลือด ฟันโดนครั้งต่อไปคริติคอลแน่นอน'],['เกราะโลหิต','สร้างเกราะเลือดรับดาเมจแทน อยู่ได้ 8 วินาทีหรือจนแตก'],['คำรามโลหิต','คำรามกระแทกคู่ต่อสู้กระเด็น แล้วเข้าสู่ร่างคลั่ง 8 วินาที ทุกดาบคริติคอลและทะลวงการปัด']],
   tide:[['บอลวารี','ยิงลูกน้ำหมุนพุ่งไปข้างหน้า'],['น้ำพุทะลวง','น้ำพุพุ่งขึ้นจากใต้เท้าคู่ต่อสู้ ดีดให้ลอยแล้วซัดซ้ำกลางอากาศ'],['คลื่นยักษ์','คลื่นยักษ์ซัดคู่ต่อสู้ไปทั้งตัว แล้วกระแทกเข้ากับขอบสนาม']],
   bloom:[['บุปผาสูบโลหิต','ดอกไม้งอกบนตัวคู่ต่อสู้ ดูดเลือดทีละน้อยมาเติมให้ตัวเองราว 3 วินาที'],['วิถีบุปผาพิษ','ฟันแล้วดอกไม้งอกเป็นแนวไปข้างหน้า ใครเหยียบจะเชื่องช้าและติดพิษ (ติดพิษ = ช้าลงหนักและตีเบาลง 30%)'],['สวนบุปผาพิษ','ดอกไม้ยักษ์และดอกเล็กๆ งอกเต็มสนาม คู่ต่อสู้เชื่องช้า 4 วินาทีและติดพิษ 4 วินาที']],
-  glacier:[['ไอเหมันต์','พ่นไอเย็นเป็นสายไปข้างหน้า โดนแล้วได้รับดาเมจและติดแต้มน้ำแข็ง 1 แต้ม (สะสมครบ 5 แต้ม น้ำแข็งจะแตกระเบิดใส่ตัวศัตรู ดาเมจรุนแรง)'],['ดาบเหมันต์','เคลือบดาบด้วยน้ำแข็ง 7 วินาที ฟันโดนทุกครั้งเพิ่มแต้มน้ำแข็ง 1 แต้ม'],['ธารน้ำแข็ง','ธารน้ำแข็งงอกขึ้นกลืนตัวคู่ต่อสู้ ตัวแข็งขยับไม่ได้ราว 3 วินาที โดนความเย็นกัดเสียเลือดต่อเนื่อง ปิดท้ายด้วยแต้มน้ำแข็งอีก 2 แต้ม']],
+  glacier:[['ไอเหมันต์','พ่นไอเย็นเป็นสายไปข้างหน้า โดนแล้วได้รับดาเมจและติดแต้มน้ำแข็ง 1 แต้ม (สะสมครบ 3 แต้ม น้ำแข็งจะแตกระเบิดใส่ตัวศัตรู ดาเมจรุนแรง)'],['ดาบเหมันต์','เคลือบดาบด้วยน้ำแข็ง 7 วินาที ฟันโดนทุกครั้งเพิ่มแต้มน้ำแข็ง 1 แต้ม'],['ธารน้ำแข็ง','ธารน้ำแข็งงอกขึ้นกลืนตัวคู่ต่อสู้ ตัวแข็งขยับไม่ได้ราว 3 วินาที โดนความเย็นกัดเสียเลือดต่อเนื่อง ปิดท้ายด้วยแต้มน้ำแข็งอีก 2 แต้ม']],
   mimic:[['เงาสะท้อน','สุ่มยืมสกิล 1 ของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ'],['เงาสะท้อนคู่','สุ่มยืมสกิล 2 ของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ'],['จันทร์สะท้อนพลัง','สุ่มยืมท่าไม้ตายของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ']]
 };
 const skIcons=r=>`<span class="sks">${[0,1,2].map(k=>`<span class="sk${k===2?' u':''}" role="button" tabindex="0" data-sk="${r.ult}:${k}" style="--c:${r.col}" aria-label="${SKTXT[r.ult][k][0]}"><i><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[r.ult]}</svg></i>${k===2?'ไม้ตาย':'สกิล '+(k+1)}</span>`).join('')}</span>`;
