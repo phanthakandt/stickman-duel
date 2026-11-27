@@ -60,6 +60,10 @@ body:not(.picking) .bar{max-width:max(560px,calc((100dvh - 96px)*16/9));margin-i
 .hpm{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap}.hpm span{color:var(--mute);margin-right:4px}.hpm button{min-width:64px}
 .go .big{background:var(--gold);color:#1a120c;border-color:var(--gold);font-size:18px;padding:0 32px}
 body.picking .bar,body.picking .cards,body.picking #bet{display:none}
+.mode{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}.mode button{min-width:150px}
+#sel.gt .slot.r{opacity:.55;pointer-events:none}
+body.gt #cards,body.gt #bet{display:none}
+#ready.low{align-content:end;padding-bottom:7%;background:linear-gradient(#0000 55%,#000a)}
 @media(max-width:780px){.roster{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.ch{grid-template-columns:1fr;justify-items:center;text-align:center;padding:8px}.ms{width:100%;text-align:left}.slot{padding:8px 10px}}
 .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0 22px}
@@ -93,10 +97,11 @@ h2{font:600 20px Kanit,sans-serif;margin:26px 0 8px}
 <div class="snd"><button id="sndBtn"></button><button id="musBtn"></button></div>
 <div class="stage"><canvas id="cv" aria-label="สนามต่อสู้สติ๊กแมน"></canvas>
 <button id="fsx">ออกจากเต็มจอ</button>
-<div id="ready" hidden><p>ทายผู้ชนะด้านล่างก่อนได้เลย</p><button id="go">เริ่มสู้!</button></div>
+<div id="ready" hidden><p id="readyMsg">ทายผู้ชนะด้านล่างก่อนได้เลย</p><button id="go">เริ่มสู้!</button></div>
 <div id="sel">
+  <div class="mode" role="group" aria-label="โหมด"><button data-mode="duel">ดวล 1 ต่อ 1</button><button data-mode="gauntlet">ไล่ล้มทุกตัว</button></div>
   <div class="vs">
-    <button class="slot act" data-slot="0"><small>ฝั่งซ้าย</small><b id="s0">—</b></button>
+    <button class="slot act" data-slot="0"><small id="s0l">ฝั่งซ้าย</small><b id="s0">—</b></button>
     <div class="vsx">VS</div>
     <button class="slot r" data-slot="1"><small>ฝั่งขวา</small><b id="s1">—</b></button>
   </div>
@@ -1110,13 +1115,37 @@ function update(f,o,think){
 /* ---------- flow ---------- */
 function startRound(){F.forEach(resetF);projs=[];ufx=[];props=[];G.ult=null;G.camT=null;G.darkT=0;G.phase='intro';G.pt=0;G.timer=3600;G.winner=null}
 function newMatch(){
-  F=[mk(0,picks[0]),mk(1,picks[1])];G={f:G.f||0,round:1,phase:'ready',pt:0,timer:3600,hitstop:0,shake:0,slowT:0,msg:null,bet:null,locked:false};
+  F=[mk(0,picks[0]),mk(1,picks[1])];G={f:G.f||0,round:1,phase:'ready',pt:0,timer:3600,hitstop:0,shake:0,slowT:0,msg:null,bet:null,locked:false,gt:!!GT};
   parts=[];pops=[];startRound();G.phase='ready';G.msg=null;renderCards();betLine();
-  addLog(`— แมตช์ใหม่: <b style="color:${F[0].col}">${F[0].name}</b> ปะทะ <b style="color:${F[1].col}">${F[1].name}</b> —`);
+  if(GT){addLog(`— ด่าน ${GT.idx+1}/${GT.queue.length}: <b style="color:${F[0].col}">${F[0].name}</b> ปะทะ <b style="color:${F[1].col}">${F[1].name}</b> —`);
+    setReady(`ตัวเอก ${F[0].name} · ต้องล้มคู่ต่อสู้ ${GT.queue.length} ตัว ยกเดียวรู้ผล`,'เริ่มไล่ล้ม!',false)}
+  else{addLog(`— แมตช์ใหม่: <b style="color:${F[0].col}">${F[0].name}</b> ปะทะ <b style="color:${F[1].col}">${F[1].name}</b> —`);setReady('ทายผู้ชนะด้านล่างก่อนได้เลย','เริ่มสู้!',false)}
+}
+/* ---------- gauntlet: one hero against every other sword in random order, one round each, until they fall ---------- */
+let GT=null;
+const need=()=>G.gt?1:2;
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=RI(0,i);[a[i],a[j]]=[a[j],a[i]]}return a};
+function gtRecords(){try{return JSON.parse(localStorage.getItem('sd-gt')||'{}')}catch(e){return{}}}
+function gtSave(n,clear){const r=gtRecords(),k=ROSTER[GT.hero].name,o=r[k]||{best:0,clears:0};o.best=Math.max(o.best,n);if(clear)o.clears++;r[k]=o;try{localStorage.setItem('sd-gt',JSON.stringify(r))}catch(e){}return o}
+function gtStart(hero){GT={hero,queue:shuffle(ROSTER.map((_,i)=>i).filter(i=>i!==hero)),idx:0};picks=[hero,GT.queue[0]];document.body.classList.add('gt');newMatch()}
+function gtResult(w){
+  const n=GT.queue.length,h=F[0],o=F[1];G.pt=0;
+  if(w===h){GT.idx++;
+    if(GT.idx>=n){G.phase='gtend';GT.clear=true;const rec=gtSave(GT.idx,true);sfx('gong');
+      msg('เคลียร์!',99999,`${h.name} ล้มครบทั้ง ${n} ตัว`);
+      addLog(`🏆 <b style="color:${h.col}">${h.name}</b> เคลียร์โหมดไล่ล้ม! (เคลียร์มาแล้ว ${rec.clears} ครั้ง)`);
+      setReady(`เคลียร์มาแล้ว ${rec.clears} ครั้งด้วย ${h.name}`,'เล่นอีกรอบ',true)}
+    else{G.phase='gtnext';msg('ชนะ!',99999,'');
+      addLog(`ด่าน ${GT.idx}/${n} — <b style="color:${h.col}">${h.name}</b> ล้ม <b style="color:${o.col}">${o.name}</b> ได้`)}
+  }else{G.phase='gtend';const rec=gtSave(GT.idx,false);
+    msg('พ่ายแพ้',99999,`ล้มได้ ${GT.idx} จาก ${n} ตัว`);
+    addLog(`<b style="color:${h.col}">${h.name}</b> แพ้ให้ <b style="color:${o.col}">${o.name}</b> ที่ด่าน ${GT.idx+1} · ล้มได้ ${GT.idx} ตัว (สถิติดีสุด ${rec.best})`);
+    setReady(`สถิติดีสุดของ ${h.name}: ล้มได้ ${rec.best} จาก ${n} ตัว`,'ลองใหม่',true)}
 }
 function endRound(){
-  if(F.some(f=>f.wins>=2)){
-    const w=F.find(f=>f.wins>=2);G.phase='over';G.pt=0;msg(w.name+' ชนะ!',99999,`รีแมตช์ใน 8 วินาที`);
+  if(F.some(f=>f.wins>=need())){
+    const w=F.find(f=>f.wins>=need());if(G.gt){gtResult(w);return}
+    G.phase='over';G.pt=0;msg(w.name+' ชนะ!',99999,`รีแมตช์ใน 8 วินาที`);
     addLog(`<b style="color:${w.col}">${w.name}</b> ชนะแมตช์ ${w.wins}–${F.find(f=>f!==w).wins}`+(G.bet!==null?(F[G.bet]===w?' · คุณทายถูก!':' · คุณทายผิด'):''));
     betLine(w);
   }else{G.round++;startRound()}
@@ -1162,6 +1191,12 @@ function step(){
     if(G.pt===60&&G.winner&&G.winner.st!=='ko'){set(G.winner,'win')}
     if(G.pt>=200)endRound();
   }
+  if(G.phase==='gtnext'){
+    if(G.pt===2&&F[0].st!=='ko')set(F[0],'win');
+    if(G.msg)G.msg.sub=`ด่านต่อไป: ${ROSTER[GT.queue[GT.idx]].name} ใน ${Math.max(0,Math.ceil((300-G.pt)/60))} วินาที`;
+    if(G.pt>=300){picks=[GT.hero,GT.queue[GT.idx]];newMatch();G.phase='intro';G.pt=0;G.locked=true}
+  }
+  if(G.phase==='gtend'&&G.pt===2){const w=GT.clear?F[0]:F[1];if(w.st!=='ko')set(w,'win')}
   if(G.phase==='over'){
     if(G.pt===2){const w=F.find(f=>f.wins>=2);if(w.st!=='ko')set(w,'win')}
     if(G.msg)G.msg.sub=`รีแมตช์ใน ${Math.max(0,Math.ceil((480-G.pt)/60))} วินาที`;
@@ -1336,13 +1371,13 @@ function hud(){
       ctx.fillRect(i?gx+gw*(1-fill):gx,gy,gw*fill,6);ctx.restore();
       if(rdy){ctx.fillStyle='rgba(255,255,255,'+(.35+.25*Math.sin(G.f*.15))+')';ctx.fillRect(gx,gy,gw,2)}}
     if(full){ctx.font='600 13px Kanit, sans-serif';ctx.fillStyle='#ffc94a';ctx.fillText('มานาเต็ม',i?ex-8:ex+ew+8,y+29);}
-    for(let r=0;r<2;r++){const px=i?x+w-nw-22-r*20:x+nw+22+r*20;
+    for(let r=0;r<need();r++){const px=i?x+w-nw-22-r*20:x+nw+22+r*20;
       ctx.beginPath();ctx.arc(px,y+57,7,0,7);ctx.fillStyle=f.wins>r?'#ffc94a':'#120a07aa';ctx.fill();ctx.strokeStyle='#ffc94a';ctx.lineWidth=1.5;ctx.stroke()}
   });
   ctx.fillStyle='#120a07dd';ctx.fillRect(W/2-36,14,72,50);
   ctx.font='30px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillStyle='#f6eadb';ctx.fillText('∞',W/2,40);
-  ctx.font='600 13px Kanit, sans-serif';ctx.fillStyle='#b9a796';ctx.fillText('ยกที่ '+G.round,W/2,76);
+  ctx.font='600 13px Kanit, sans-serif';ctx.fillStyle='#b9a796';ctx.fillText(G.gt&&GT?`ด่าน ${Math.min(GT.idx+1,GT.queue.length)}/${GT.queue.length}`:'ยกที่ '+G.round,W/2,76);
 }
 function ultTitle(){
   const U=G.ult,t=U.t,f=U.f;if(t<18||t>106)return;
@@ -1429,21 +1464,31 @@ document.querySelectorAll('[data-sp]').forEach(b=>b.addEventListener('click',()=
 }));
 /* ---------- character select ---------- */
 const sel=document.getElementById('sel'),rosterEl=document.getElementById('roster');
+let MODE='duel';try{if(localStorage.getItem('sd-mode')==='gauntlet')MODE='gauntlet'}catch(e){}
+const modeBtns=[...document.querySelectorAll('[data-mode]')];
+modeBtns.forEach(b=>b.addEventListener('click',()=>{MODE=b.dataset.mode;try{localStorage.setItem('sd-mode',MODE)}catch(e){}slot=0;renderRoster()}));
+const readyMsg=document.getElementById('readyMsg'),goBtn=document.getElementById('go');
+function setReady(t,b,low){readyMsg.textContent=t;goBtn.textContent=b;document.getElementById('ready').classList.toggle('low',!!low)}
 const pfs=ROSTER.map((r,i)=>Object.assign({},r,{id:i,x:0,y:GY,s:1,st:'idle',t:0,p:null}));
 let pcs=[];
 function renderRoster(){
+  const gt=MODE==='gauntlet';sel.classList.toggle('gt',gt);modeBtns.forEach(b=>b.classList.toggle('on',b.dataset.mode===MODE));
+  document.getElementById('start').textContent=gt?'เริ่มไล่ล้ม':'ขึ้นสังเวียน';document.getElementById('rnd').textContent=gt?'สุ่มตัวเอก':'สุ่มคู่ชก';
+  document.getElementById('s0l').textContent=gt?'ตัวเอก':'ฝั่งซ้าย';
   rosterEl.innerHTML=ROSTER.map((r,i)=>{
-    const at=picks.indexOf(i),both=picks[0]===i&&picks[1]===i;
+    const at=gt?(picks[0]===i?0:-1):picks.indexOf(i),both=!gt&&picks[0]===i&&picks[1]===i;
     return `<button class="ch ${at>=0?'p'+at:''}" data-ch="${i}" style="color:${at>=0?r.col:'inherit'}" aria-pressed="${at>=0}">
-      ${at>=0?`<span class="tag">${both?'ซ้าย+ขวา':at?'ขวา':'ซ้าย'}</span>`:''}
+      ${at>=0?`<span class="tag">${gt?'ตัวเอก':both?'ซ้าย+ขวา':at?'ขวา':'ซ้าย'}</span>`:''}
       <canvas width="${104*dpr}" height="${130*dpr}"></canvas>
       <span style="color:var(--ink)"><span class="n" style="color:${r.col}">${r.name}</span><br><span class="d">${r.style} · ${r.desc}</span>
       <span class="ms">${LABELS.map(([k,,s,a,b])=>`<span>${s}</span><span class="meter"><i style="width:${pct(r,k,a,b)}%;background:${r.col}"></i></span>`).join('')}</span></span>
     </button>`}).join('');
   pcs=[...rosterEl.querySelectorAll('canvas')].map(c=>c.getContext('2d'));
   [0,1].forEach(i=>{const r=mk(i,picks[i]),el=document.getElementById('s'+i);el.textContent=r.name;el.style.color=r.col;
-    document.querySelector(`[data-slot="${i}"]`).classList.toggle('act',slot===i)});
-  document.getElementById('hint').textContent=`แตะตัวละครเพื่อวางไว้ฝั่ง${slot?'ขวา':'ซ้าย'} · เลือกตัวเดียวกันทั้งสองฝั่งก็ได้ (ร่างแฝดจะเปลี่ยนสี)`;
+    if(gt&&i===1){el.textContent=`สุ่มทั้ง ${ROSTER.length-1} ตัว`;el.style.color='var(--mute)'}
+    document.querySelector(`[data-slot="${i}"]`).classList.toggle('act',gt?i===0:slot===i)});
+  if(gt){const rec=gtRecords()[ROSTER[picks[0]].name];document.getElementById('hint').textContent=`แตะเลือกตัวเอก 1 ตัว แล้วสู้กับทุกตัวที่เหลือแบบสุ่มลำดับ ยกเดียวรู้ผล แพ้เมื่อไรจบ ล้มครบคือเคลียร์`+(rec?` · สถิติ ${ROSTER[picks[0]].name}: ดีสุด ${rec.best} ตัว, เคลียร์ ${rec.clears} ครั้ง`:'')}
+  else document.getElementById('hint').textContent=`แตะตัวละครเพื่อวางไว้ฝั่ง${slot?'ขวา':'ซ้าย'} · เลือกตัวเดียวกันทั้งสองฝั่งก็ได้ (ร่างแฝดจะเปลี่ยนสี)`;
 }
 function drawPortraits(){
   pcs.forEach((c,i)=>{
@@ -1466,15 +1511,17 @@ fsBtn.addEventListener('click',()=>{try{const r=(stageEl.requestFullscreen||stag
 document.getElementById('fsx').addEventListener('click',()=>{try{(document.exitFullscreen||document.webkitExitFullscreen).call(document)}catch(e){}});
 function startMatch(){
   setTimeout(()=>{try{stageEl.scrollIntoView({block:'start',behavior:'smooth'})}catch(e){}},30);
-  selecting=false;document.body.classList.remove('picking');sel.hidden=true;cv.style.display='';newMatch();
+  selecting=false;document.body.classList.remove('picking');sel.hidden=true;cv.style.display='';
+  if(MODE==='gauntlet')gtStart(picks[0]);else{GT=null;document.body.classList.remove('gt');newMatch()}
 }
 rosterEl.addEventListener('click',e=>{
   const b=e.target.closest('[data-ch]');if(!b)return;const i=+b.dataset.ch,o=1-slot;
+  if(MODE==='gauntlet'){picks[0]=i;renderRoster();return}
   picks[slot]=i;slot=o;renderRoster();
 });
 document.querySelectorAll('[data-slot]').forEach(b=>b.addEventListener('click',()=>{slot=+b.dataset.slot;renderRoster()}));
 document.getElementById('rnd').addEventListener('click',()=>{
-  const a=RI(0,ROSTER.length-1);let b=RI(0,ROSTER.length-2);if(b>=a)b++;picks=[a,b];renderRoster();
+  const a=RI(0,ROSTER.length-1);let b=RI(0,ROSTER.length-2);if(b>=a)b++;picks=MODE==='gauntlet'?[a,picks[1]]:[a,b];renderRoster();
 });
 document.getElementById('start').addEventListener('click',startMatch);
 const hpBtns=[...document.querySelectorAll('[data-hpm]')];
@@ -1488,10 +1535,10 @@ function showSnd(){sndBtn.textContent=SND.on?'เสียงเอฟเฟก�
   try{localStorage.setItem('sd-snd',JSON.stringify(SND))}catch(e){}if(AC){SFXG.gain.value=SND.on?1:0;MUSG.gain.value=SND.music?.32:0}}
 sndBtn.addEventListener('click',()=>{initAudio();SND.on=!SND.on;showSnd()});musBtn.addEventListener('click',()=>{initAudio();SND.music=!SND.music;showSnd()});showSnd();
 const readyEl=document.getElementById('ready');
-document.getElementById('go').addEventListener('click',()=>{if(G.phase!=='ready')return;G.phase='intro';G.pt=0;G.locked=true;renderCards();betLine();if(paused)togglePause()});
+document.getElementById('go').addEventListener('click',()=>{if(G.phase==='gtend'&&GT){gtStart(GT.hero);return}if(G.phase!=='ready')return;G.phase='intro';G.pt=0;G.locked=true;renderCards();betLine();if(paused)togglePause()});
 function loop(now){
   const dt=Math.min(64,now-last);last=now;
-  readyEl.hidden=selecting||G.phase!=='ready';
+  readyEl.hidden=selecting||!(G.phase==='ready'||G.phase==='gtend');
   if(selecting){G.f++;drawPortraits();requestAnimationFrame(loop);return}
   if(!paused){acc+=dt*speed*(G.slowT>0?.3:1);let n=0;while(acc>=FPS&&n<10){step();acc-=FPS;n++}if(n>=10)acc=0}
   render();requestAnimationFrame(loop);
