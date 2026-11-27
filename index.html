@@ -183,17 +183,17 @@ function drawBg(){
 
 /* ---------- fighters ---------- */
 const ROSTER=[
-  {name:'ชาดอัสดง',ult:'dash',stance:'jodan',alt:['#ff7ab8','#93285e'],col:'#ff5a3c',dark:'#8f2716',acc:'spike',style:'สายบุกดุดัน',desc:'ฟันรัวไม่หยุด แต่การ์ดหลวม',agg:.82,pb:.25,agi:.14,jumpy:.12,spd:2.8,pow:0.94},
+  {name:'ชาดอัสดง',ult:'dash',stance:'jodan',alt:['#ff7ab8','#93285e'],col:'#ff5a3c',dark:'#8f2716',acc:'spike',style:'สายบุกดุดัน',desc:'ฟันรัวไม่หยุด แต่การ์ดหลวม',agg:.82,pb:.25,agi:.14,jumpy:.12,spd:2.8,pow:0.97},
   {name:'นีลนภา',ult:'rain',stance:'chudan',alt:['#8f8cff','#2e3a96'],col:'#3fbcff',dark:'#185b86',acc:'band',style:'สายตั้งรับ',desc:'ใจเย็น ตั้งดาบรอปัดแล้วสวน',agg:.5,pb:.52,agi:.16,jumpy:.07,spd:2.5,pow:1.14},
-  {name:'หยกพรายพลิ้ว',ult:'wind',stance:'waki',alt:['#b4f05a','#5a7d1c'],col:'#5ce0c0',dark:'#1d7a66',acc:'scarf',style:'สายพลิ้วไหว',desc:'หลบเก่ง ชอบกระโดดฟันจากกลางอากาศ',agg:0.66,pb:0.32,agi:.3,jumpy:.2,spd:3.1,pow:1.04},
-  {name:'อำพันหลับใหล',ult:'meteor',stance:'hasso',alt:['#d4d4d4','#5e5e5e'],col:'#e8a25c',dark:'#8a5624',acc:'hat',style:'สายดาบหนัก',desc:'เดินช้า แต่ฟันทีหนักที่สุด',agg:.66,pb:.42,agi:.06,jumpy:.05,spd:2.15,pow:1.17},
+  {name:'หยกพรายพลิ้ว',ult:'wind',stance:'waki',alt:['#b4f05a','#5a7d1c'],col:'#5ce0c0',dark:'#1d7a66',acc:'scarf',style:'สายพลิ้วไหว',desc:'หลบเก่ง ชอบกระโดดฟันจากกลางอากาศ',agg:0.66,pb:0.32,agi:.3,jumpy:.2,spd:3.1,pow:1.07},
+  {name:'อำพันหลับใหล',ult:'meteor',stance:'hasso',alt:['#d4d4d4','#5e5e5e'],col:'#e8a25c',dark:'#8a5624',acc:'hat',style:'สายดาบหนัก',desc:'เดินช้า แต่ฟันทีหนักที่สุด',agg:.66,pb:.42,agi:.06,jumpy:.05,spd:2.15,pow:1.22},
   {name:'สุวรรณรัตติกาล',ult:'iai',stance:'iai',alt:['#fff6c8','#8f8250'],col:'#ffd94a',dark:'#9a7a12',acc:'band',style:'สายชักดาบ',desc:'เร็วที่สุดในสนาม บุกไม่ยั้ง',agg:.76,pb:0.26,agi:.22,jumpy:.14,spd:3.2,pow:1.04},
-  {name:'บุษบาราตรี',ult:'petal',stance:'gedan',alt:['#ff6b8f','#8f2340'],col:'#c49bff',dark:'#5d3f99',acc:'hood',style:'สายนักฆ่า',desc:'เงียบ เร็ว หลบแล้วสวนแม่น',agg:0.5,pb:0.2,agi:0.2,jumpy:.16,spd:2.9,pow:0.84},
+  {name:'บุษบาราตรี',ult:'petal',stance:'gedan',alt:['#ff6b8f','#8f2340'],col:'#c49bff',dark:'#5d3f99',acc:'hood',style:'สายนักฆ่า',desc:'เงียบ เร็ว หลบแล้วสวนแม่น',agg:0.5,pb:0.2,agi:0.2,jumpy:.16,spd:2.9,pow:0.93},
   {name:'ชมพูนุทพิโรธ',ult:'storm',stance:'kasumi',alt:['#7af0ff','#1f6f80'],col:'#ff5fb7',dark:'#8f1f5e',acc:'pony',style:'สายอัสนี',desc:'ฟาดสายฟ้าให้ชา แล้วรุมฟัน',agg:.74,pb:.29,agi:.22,jumpy:.15,spd:3,pow:1.09},
-  {name:'เพลิงกัลป์',ult:'breath',stance:'katsugi',alt:['#8fd4ff','#245a8a'],col:'#ff7a1a',dark:'#a8380a',acc:'flame',style:'สายเผาผลาญ',desc:'จุดไฟดาบและกาย เผาศัตรูทีละน้อย',agg:0.68,pb:0.26,agi:0.12,jumpy:.1,spd:2.6,pow:1.19},
+  {name:'เพลิงกัลป์',ult:'breath',stance:'katsugi',alt:['#8fd4ff','#245a8a'],col:'#ff7a1a',dark:'#a8380a',acc:'flame',style:'สายเผาผลาญ',desc:'จุดไฟดาบและกาย เผาศัตรูทีละน้อย',agg:0.68,pb:0.26,agi:0.12,jumpy:.1,spd:2.6,pow:1.22},
   {name:'พฤกษาพนาลี',ult:'grove',stance:'kubi',alt:['#c9d94a','#5f6a12'],col:'#2bb35a',dark:'#0e5a26',acc:'leaf',style:'สายพงไพร',desc:'เรียกต้นไม้กระแทก หญ้าพันธนาการ',agg:0.66,pb:0.35,agi:.16,jumpy:.1,spd:2.5,pow:1.04},
-  {name:'โลหิตราชันย์',ult:'roar',stance:'oni',alt:['#e8e8f0','#5a5a6a'],col:'#e0142e',dark:'#5c0612',acc:'horns',style:'สายคลั่งโลหิต',desc:'คมดาบคริแน่นอน เกราะโลหิต คำรามคลั่ง',agg:.8,pb:0.29,agi:0.13,jumpy:.08,spd:2.6,pow:1.07},
-  {name:'จันทราสะท้อน',ult:'mimic',stance:'seigan',alt:['#ffd6f0','#7a4a6a'],col:'#eef0ff',dark:'#5f6280',acc:'mask',style:'สายเงาสะท้อน',desc:'ทุกท่าสุ่มยืมมาจากนักดาบคนอื่น',agg:.66,pb:0.32,agi:.18,jumpy:.12,spd:2.7,pow:1.02},
+  {name:'โลหิตราชันย์',ult:'roar',stance:'oni',alt:['#e8e8f0','#5a5a6a'],col:'#e0142e',dark:'#5c0612',acc:'horns',style:'สายคลั่งโลหิต',desc:'คมดาบคริแน่นอน เกราะโลหิต คำรามคลั่ง',agg:.8,pb:0.29,agi:0.13,jumpy:.08,spd:2.6,pow:1.09},
+  {name:'จันทราสะท้อน',ult:'mimic',stance:'seigan',alt:['#ffd6f0','#7a4a6a'],col:'#eef0ff',dark:'#5f6280',acc:'mask',style:'สายเงาสะท้อน',desc:'ทุกท่าสุ่มยืมมาจากนักดาบคนอื่น',agg:.66,pb:0.32,agi:.18,jumpy:.12,spd:2.7,pow:1.06},
   {name:'นทีสมุทร',ult:'tide',stance:'nagare',alt:['#7fffd4','#1f6f5f'],col:'#3d6cff',dark:'#122a7a',acc:'topknot',style:'สายวารี',desc:'บอลน้ำ น้ำพุพุ่ง คลื่นยักษ์ซัด',agg:0.67,pb:0.33,agi:.18,jumpy:.12,spd:2.7,pow:1.06},
   {name:'บุปผามัจจุราช',ult:'bloom',stance:'hana',alt:['#ffd84a','#8a6a12'],col:'#e255e0',dark:'#7a1f78',acc:'thorn',style:'สายบุปผาพิษ',desc:'ดอกไม้ดูดเลือด ทางดอกไม้พิษทำให้เชื่องช้า',agg:.62,pb:.3,agi:.18,jumpy:.12,spd:2.7,pow:1},
   {name:'เหมันต์ธารา',ult:'glacier',stance:'yuki',alt:['#d6c2ff','#5a4a99'],col:'#a8f0ff',dark:'#2a7a99',acc:'icicle',style:'สายเหมันต์',desc:'สะสมแต้มน้ำแข็งครบ 3 แล้วแตกระเบิด แช่แข็งศัตรู',agg:.66,pb:.34,agi:.16,jumpy:.1,spd:2.7,pow:1.06}
