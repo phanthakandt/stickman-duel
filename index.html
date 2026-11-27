@@ -421,11 +421,13 @@ function strike(f,o,A){
   }
   if((o.st==='block'||o.st==='parry')&&o.s===-f.s){
     const cx=o.x+o.s*34,cy=o.y-104;
-    if(o.st==='block'&&o.t<=7){
+    const heavy=f.rage>0; // rage cuts are too heavy to deflect, and crush through a guard
+    if(o.st==='block'&&o.t<=7&&!heavy){
       deflect(o,cx,cy);set(f,'recoil');f.dur=28;f.vx=-f.s*6;return;
     }
-    const d=Math.max(1,Math.round(dmg*.15));hurtHp(o,d);o.vx=f.s*A.kb*.9;
-    sfx('block');sparks(cx,cy,24,6);pop(cx,cy-18,'ปัด','#fff3c2');
+    const d=Math.max(1,Math.round(dmg*(heavy?.4:.15)));hurtHp(o,d);o.vx=f.s*A.kb*(heavy?1.8:.9);
+    if(heavy){sfx('clash');sparks(cx,cy,40,9);flashFx(cx,cy,80);pop(cx,cy-22,'ทะลวง!',f.col,1);set(o,'recoil');o.dur=20;G.shake=8}
+    else{sfx('block');sparks(cx,cy,24,6);pop(cx,cy-18,'ปัด','#fff3c2')}
     f.en=Math.min(100,f.en+dmg*2);o.en=Math.min(100,o.en+dmg*2);G.hitstop=5;G.shake=3;
     if(o.hp<=0)ko(f,o);return;
   }
@@ -1061,6 +1063,8 @@ function drawFighter(f){
   ctx.fillStyle=body;ctx.beginPath();ctx.arc(hx,hy,12.5,0,7);ctx.fill();
   const shape=(pts,fill)=>{ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);pts.slice(1).forEach(q=>ctx.lineTo(q[0],q[1]));ctx.closePath();ctx.lineWidth=3;ctx.strokeStyle=rim;ctx.stroke();ctx.fillStyle=fill;ctx.fill()};
   if(f.acc==='band'){ctx.fillStyle='#1c1515';ctx.fillRect(hx-12,hy-7,24,4)}
+  if(f.rage>0){const ey=hy-46+Math.sin(G.f*.12)*2,ex=hx;ctx.save();ctx.globalCompositeOperation='lighter';ctx.shadowColor=f.col;ctx.shadowBlur=14;ctx.strokeStyle=f.col;ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(ex-13,ey);ctx.quadraticCurveTo(ex,ey-10,ex+13,ey);ctx.quadraticCurveTo(ex,ey+10,ex-13,ey);ctx.stroke();ctx.fillStyle='#ff6070';ctx.beginPath();ctx.arc(ex,ey,3.6+Math.sin(G.f*.3),0,7);ctx.fill();ctx.restore()}
   if(f.acc==='horns'){[-1,1].forEach(k=>{const bx=hx+k*7,by=hy-9;shape([[bx-3*k,by+2],[bx+k*8,by-10],[bx+k*6,by-20],[bx+k*3,by-11],[bx+3*k,by+2]],body)})}
   if(f.acc==='leaf'){[[-12,-12,-2.2],[-15,-2,-2.7],[-4,-18,-1.7]].forEach(([dx,dy,a],k)=>{const sw=Math.sin(G.f*.12+k)*.12;ctx.save();ctx.translate(hx+s*dx,hy+dy);ctx.rotate((a+sw)*s);
     ctx.beginPath();ctx.ellipse(0,-9,4.5,10,0,0,7);ctx.fillStyle=body;ctx.fill();ctx.strokeStyle=rim;ctx.lineWidth=2;ctx.stroke();ctx.strokeStyle=f.col;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-16);ctx.stroke();ctx.restore()})}
