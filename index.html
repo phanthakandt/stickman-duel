@@ -26,7 +26,7 @@ body:not(.picking) .bar{max-width:max(560px,calc((100dvh - 96px)*16/9));margin-i
 #fsx{display:none;position:absolute;top:10px;right:10px;min-height:40px;padding:0 14px;font-size:14px;opacity:.8}
 .stage:fullscreen #fsx,.stage:-webkit-full-screen #fsx{display:block}
 #cv{display:block;width:100%;aspect-ratio:16/9}
-#sel{padding:clamp(14px,2.5vw,28px);background:radial-gradient(ellipse at 50% 0,#5a2a22,#16110e 70%);display:grid;gap:14px}
+#sel{position:relative;padding:clamp(14px,2.5vw,28px);background:radial-gradient(ellipse at 50% 0,#5a2a22,#16110e 70%);display:grid;gap:14px}
 #sel[hidden]{display:none}
 .stage{position:relative}
 #ready{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;background:radial-gradient(ellipse at 50% 55%,#0007,#0000 60%);pointer-events:none}
@@ -53,6 +53,20 @@ body:not(.picking) .bar{max-width:max(560px,calc((100dvh - 96px)*16/9));margin-i
 .ch .n{font:700 20px/1.1 Kanit,sans-serif}
 .ch .d{font-size:13px;color:var(--mute);line-height:1.35}
 .ch .tag{position:absolute;top:6px;right:8px;font:11px Bungee,sans-serif;padding:3px 7px;border-radius:6px;background:var(--gold);color:#1a120c}
+.sks{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+@media(min-width:1001px),(max-width:520px){.sks{justify-content:center}}
+.sk{display:grid;justify-items:center;gap:1px;font-size:10px;line-height:1.1;color:var(--mute);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sk{min-width:36px}.sk i{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#0009;border:2px solid #ffffff33;color:var(--c)}
+.sk.u i{border-color:var(--gold);box-shadow:0 0 0 2px #ffc94a33}
+.sk svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sk.open i,.sk:focus-visible i{background:var(--c);color:#120a07;border-color:var(--c)}
+.sk:focus-visible{outline:none}
+@media(hover:hover){.sk:hover i{border-color:var(--c)}}
+#skpop{position:absolute;z-index:5;width:min(320px,calc(100% - 24px));background:#120c09f2;border:2px solid var(--c);border-radius:12px;padding:12px 14px;box-shadow:0 14px 40px #000c;text-align:left}
+#skpop[hidden]{display:none}
+#skpop b{display:block;font:700 18px/1.2 Kanit,sans-serif;color:var(--c)}
+#skpop small{display:block;color:var(--gold);font-size:12px;margin:2px 0 6px}
+#skpop p{margin:0;font-size:14px;line-height:1.45;color:var(--ink)}
 .ms{display:grid;grid-template-columns:2.4em minmax(0,1fr);gap:2px 6px;align-items:center;font-size:12px;margin-top:6px;color:var(--mute)}
 .ms .meter{height:5px}
 .go{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
@@ -1469,9 +1483,54 @@ const modeBtns=[...document.querySelectorAll('[data-mode]')];
 modeBtns.forEach(b=>b.addEventListener('click',()=>{MODE=b.dataset.mode;try{localStorage.setItem('sd-mode',MODE)}catch(e){}slot=0;renderRoster()}));
 const readyMsg=document.getElementById('readyMsg'),goBtn=document.getElementById('go');
 function setReady(t,b,low){readyMsg.textContent=t;goBtn.textContent=b;document.getElementById('ready').classList.toggle('low',!!low)}
+/* ---------- skill icons and descriptions on the select screen ---------- */
+const ICON={
+  dash:'<path d="M4 6l6 6-6 6M12 6l6 6-6 6"/>',
+  rain:'<path d="M6 3v13M12 5v15M18 3v13M4 7h4M10 9h4M16 7h4"/>',
+  wind:'<path d="M15 3a9 9 0 1 0 0 18a7 7 0 1 1 0-18z"/>',
+  meteor:'<circle cx="15" cy="15" r="5"/><path d="M11 11L4 4M13 9L8 3M9 13L3 8"/>',
+  iai:'<path d="M3 15l14-6M15 6l4 2M5 19h14"/>',
+  petal:'<path d="M12 12c-3-3-3-7 0-9c3 2 3 6 0 9zM12 12c3-3 7-3 9 0c-2 3-6 3-9 0zM12 12c3 3 3 7 0 9c-3-2-3-6 0-9zM12 12c-3 3-7 3-9 0c2-3 6-3 9 0z"/>',
+  storm:'<path d="M13 2L5 14h6l-2 8l8-12h-6z"/>',
+  breath:'<path d="M12 22c-4 0-7-3-7-7c0-4 4-6 4-11c3 2 4 4 4 6c1-1 2-2 2-4c2 2 4 5 4 9c0 4-3 7-7 7z"/>',
+  grove:'<path d="M12 22V11M12 15l-4-3M12 13l4-3M12 3c-4 0-6 3-6 6s2 4 6 4s6-1 6-4s-2-6-6-6z"/>',
+  roar:'<path d="M12 3c3 5 6 8 6 12a6 6 0 0 1-12 0c0-4 3-7 6-12z"/><path d="M10 15l2 2l2-2"/>',
+  tide:'<path d="M2 15c3-4 5-4 7 0s4 4 7 0s4-4 6 0M2 20c3-3 5-3 7 0s4 3 7 0s4-3 6 0M8 10c0-4 4-7 8-6c-3 1-4 3-3 6"/>',
+  bloom:'<circle cx="12" cy="8" r="2"/><path d="M12 6c-1-3 1-4 0-4M12 10v12M12 16c-3-1-5 0-6 2M12 18c3-1 5 0 6 2M9 7c-3-1-4 2-2 3c1 1 3 0 5-2M15 7c3-1 4 2 2 3c-1 1-3 0-5-2"/>',
+  mimic:'<path d="M14 3a9 9 0 1 0 7 13a7 7 0 0 1-7-13z"/><path d="M16 8l2 2M18 6l1 1"/>'
+};
+const MANA_TXT=['สกิล 1 · ใช้มานา 1 ช่อง','สกิล 2 · ใช้มานา 2 ช่อง','ท่าไม้ตาย · มานาเต็มและเลือดต่ำกว่า 40% · คูลดาวน์ 40 วิ'];
+const SKTXT={
+  dash:[['ก้าวชาด','พุ่งทะลุตัวคู่ต่อสู้พร้อมฟันหนึ่งดาบ ถ้าโดนปัดแบบพอดีจังหวะจะเสียหลัก'],['สามก้าวสนธยา','พุ่งฟันทะลุไปกลับรอบตัวคู่ต่อสู้ 3 ครั้งติดกัน'],['สนธยาฉีกฟ้า','พุ่งทะลุผ่านตัวคู่ต่อสู้ในพริบตา แล้วรอยฟันค่อยๆ ระเบิดตามหลังอีก 4 ครั้ง']],
+  rain:[['ดาบฟ้าร่วง','ดาบแสง 3 เล่มร่วงลงตรงจุดที่คู่ต่อสู้ยืนอยู่'],['ม่านฟ้าครึ้ม','ดาบแสงร่วงเป็นแนวยาว 7 เล่มไล่ไปข้างหน้า ตามด้วยดาบยักษ์อีก 1 เล่ม'],['ห่าฝนนภา','ฝนดาบแสงตกใส่คู่ต่อสู้ต่อเนื่อง ปิดท้ายด้วยลำแสงจากฟ้า']],
+  wind:[['ลมหยกเฉือน','ฟันปล่อยคมลมรูปพระจันทร์เสี้ยวพุ่งไปข้างหน้า 1 ลูก'],['พายุหยกสามคม','ปล่อยคมลม 3 ลูก สูง ต่ำ แล้วลูกใหญ่ตรงกลาง'],['พายุหยกห้าคม','ฟันติดกันปล่อยคมลม 5 ลูก ลูกสุดท้ายแรงที่สุด']],
+  meteor:[['อำพันร่วง','เรียกลูกไฟตกใส่จุดที่คู่ต่อสู้ยืน'],['อำพันแตกกระจาย','ลูกไฟใหญ่ตกลงมา แล้วแตกเป็นสะเก็ดไฟกระเด็นออกไปอีก 4 ลูก'],['อุกกาบาตอำพัน','เรียกอุกกาบาตยักษ์ตกใส่คู่ต่อสู้ ดาเมจครั้งเดียวสูงมาก']],
+  iai:[['พริบทอง','วาร์ปไปด้านหลังคู่ต่อสู้แล้วชักดาบฟันหนึ่งครั้ง'],['ทองสามพริบ','วาร์ปฟันรอบตัวคู่ต่อสู้ 3 ครั้ง สลับซ้ายขวา'],['ชักดาบไร้เงา','ชักดาบครั้งเดียวเร็วจนมองไม่ทัน แล้วรอยฟันนับสิบปรากฏขึ้นพร้อมกัน']],
+  petal:[['กลีบราตรี','กลีบดอกไม้หมุนวนรอบตัวคู่ต่อสู้ บาดซ้ำ 3 ครั้ง'],['สวนราตรีบาน','สร้างวงดอกไม้ใต้เท้าคู่ต่อสู้ ใครยืนในวงจะเสียเลือดและถูกดูดมาเติมให้'],['พายุกลีบราตรี','กลีบดอกไม้นับร้อยหมุนบีบเข้าหาคู่ต่อสู้ แล้วระเบิดบานพร้อมกัน']],
+  storm:[['อัสนีแล่น','สายฟ้าแล่นออกจากดาบ ถ้าโดนคู่ต่อสู้จะชาขยับไม่ได้ครู่หนึ่ง'],['อัสนีบาตสามสาย','ฟ้าผ่า 3 ครั้งตามตำแหน่งคู่ต่อสู้ โดนครั้งไหนก็ชา'],['อัสนีพิโรธ','เรียกฟ้าผ่าลงดาบตัวเอง แล้วผ่าใส่คู่ต่อสู้ 5 ครั้งก่อนสายฟ้าใหญ่ปิดท้าย']],
+  breath:[['ดาบเพลิง','จุดไฟที่ดาบ 7 วินาที ฟันโดนแล้วคู่ต่อสู้ติดไฟ เสียเลือดต่อเนื่อง'],['กายเพลิง','ลุกเป็นไฟทั้งตัว 7 วินาที รับดาเมจน้อยลง 25% และเผาคู่ต่อสู้ที่เข้ามาใกล้'],['ลมหายใจกัลป์','พ่นไฟเป็นสายยาวใส่คู่ต่อสู้ แล้วทิ้งให้ติดไฟอีก 5 วินาที']],
+  grove:[['ไม้ผลุดพุ่ง','ต้นไม้งอกพรวดขึ้นใต้เท้าคู่ต่อสู้ กระแทกให้ลอย'],['เถาหญ้าพันธนาการ','เถาวัลย์พันขาคู่ต่อสู้ให้ขยับไม่ได้และเสียเลือดต่อเนื่อง แล้วรีบเข้าไปฟัน'],['พนาพฤกษ์','ปลูกต้นไม้ใหญ่ที่ฟื้นเลือดให้ตัวเองเรื่อยๆ พร้อมต้นไม้เล็กอีก 2 ต้น']],
+  roar:[['คมโลหิต','ชุบดาบด้วยเลือด ฟันโดนครั้งต่อไปคริติคอลแน่นอน'],['เกราะโลหิต','สร้างเกราะเลือดรับดาเมจแทน อยู่ได้ 8 วินาทีหรือจนแตก'],['คำรามโลหิต','คำรามกระแทกคู่ต่อสู้กระเด็น แล้วเข้าสู่ร่างคลั่ง 8 วินาที ทุกดาบคริติคอลและทะลวงการปัด']],
+  tide:[['บอลวารี','ยิงลูกน้ำหมุนพุ่งไปข้างหน้า'],['น้ำพุทะลวง','น้ำพุพุ่งขึ้นจากใต้เท้าคู่ต่อสู้ ดีดให้ลอยแล้วซัดซ้ำกลางอากาศ'],['คลื่นยักษ์','คลื่นยักษ์ซัดคู่ต่อสู้ไปทั้งตัว แล้วกระแทกเข้ากับขอบสนาม']],
+  bloom:[['บุปผาสูบโลหิต','ดอกไม้งอกบนตัวคู่ต่อสู้ ดูดเลือดทีละน้อยมาเติมให้ตัวเองราว 3 วินาที'],['วิถีบุปผาพิษ','ฟันแล้วดอกไม้งอกเป็นแนวไปข้างหน้า ใครเหยียบจะเชื่องช้าและติดพิษ (ติดพิษ = ช้าลงหนักและตีเบาลง 30%)'],['สวนบุปผาพิษ','ดอกไม้ยักษ์และดอกเล็กๆ งอกเต็มสนาม คู่ต่อสู้เชื่องช้า 4 วินาทีและติดพิษ 4 วินาที']],
+  mimic:[['เงาสะท้อน','สุ่มยืมสกิล 1 ของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ'],['เงาสะท้อนคู่','สุ่มยืมสกิล 2 ของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ'],['จันทร์สะท้อนพลัง','สุ่มยืมท่าไม้ตายของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ']]
+};
+const skIcons=r=>`<span class="sks">${[0,1,2].map(k=>`<span class="sk${k===2?' u':''}" role="button" tabindex="0" data-sk="${r.ult}:${k}" style="--c:${r.col}" aria-label="${SKTXT[r.ult][k][0]}"><i><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[r.ult]}</svg></i>${k===2?'ไม้ตาย':'สกิล '+(k+1)}</span>`).join('')}</span>`;
+const skpop=document.createElement('div');skpop.id='skpop';skpop.hidden=true;skpop.setAttribute('role','dialog');
+let skOpen=null;
+function closeSk(){skpop.hidden=true;if(skOpen)skOpen.classList.remove('open');skOpen=null}
+function openSk(el){
+  if(skOpen===el){closeSk();return}closeSk();if(!skpop.parentNode)sel.appendChild(skpop);
+  const [kit,k]=el.dataset.sk.split(':'),r=ROSTER.find(x=>x.ult===kit),[nm,tx]=SKTXT[kit][+k];
+  skpop.style.setProperty('--c',r.col);skpop.innerHTML=`<b>${nm}</b><small>${r.name} · ${MANA_TXT[+k]}</small><p>${tx}</p>`;
+  skpop.hidden=false;skOpen=el;el.classList.add('open');
+  const sb=sel.getBoundingClientRect(),eb=el.getBoundingClientRect(),pw=skpop.offsetWidth;
+  skpop.style.left=Math.max(12,Math.min(sb.width-pw-12,eb.left-sb.left+eb.width/2-pw/2))+'px';skpop.style.top=(eb.bottom-sb.top+8)+'px';
+}
 const pfs=ROSTER.map((r,i)=>Object.assign({},r,{id:i,x:0,y:GY,s:1,st:'idle',t:0,p:null}));
 let pcs=[];
 function renderRoster(){
+  closeSk();
   const gt=MODE==='gauntlet';sel.classList.toggle('gt',gt);modeBtns.forEach(b=>b.classList.toggle('on',b.dataset.mode===MODE));
   document.getElementById('start').textContent=gt?'เริ่มไล่ล้ม':'ขึ้นสังเวียน';document.getElementById('rnd').textContent=gt?'สุ่มตัวเอก':'สุ่มคู่ชก';
   document.getElementById('s0l').textContent=gt?'ตัวเอก':'ฝั่งซ้าย';
@@ -1481,7 +1540,7 @@ function renderRoster(){
       ${at>=0?`<span class="tag">${gt?'ตัวเอก':both?'ซ้าย+ขวา':at?'ขวา':'ซ้าย'}</span>`:''}
       <canvas width="${104*dpr}" height="${130*dpr}"></canvas>
       <span style="color:var(--ink)"><span class="n" style="color:${r.col}">${r.name}</span><br><span class="d">${r.style} · ${r.desc}</span>
-      <span class="ms">${LABELS.map(([k,,s,a,b])=>`<span>${s}</span><span class="meter"><i style="width:${pct(r,k,a,b)}%;background:${r.col}"></i></span>`).join('')}</span></span>
+      <span class="ms">${LABELS.map(([k,,s,a,b])=>`<span>${s}</span><span class="meter"><i style="width:${pct(r,k,a,b)}%;background:${r.col}"></i></span>`).join('')}</span>${skIcons(r)}</span>
     </button>`}).join('');
   pcs=[...rosterEl.querySelectorAll('canvas')].map(c=>c.getContext('2d'));
   [0,1].forEach(i=>{const r=mk(i,picks[i]),el=document.getElementById('s'+i);el.textContent=r.name;el.style.color=r.col;
@@ -1515,10 +1574,13 @@ function startMatch(){
   if(MODE==='gauntlet')gtStart(picks[0]);else{GT=null;document.body.classList.remove('gt');newMatch()}
 }
 rosterEl.addEventListener('click',e=>{
+  const sk=e.target.closest('[data-sk]');if(sk){e.preventDefault();openSk(sk);return}closeSk();
   const b=e.target.closest('[data-ch]');if(!b)return;const i=+b.dataset.ch,o=1-slot;
   if(MODE==='gauntlet'){picks[0]=i;renderRoster();return}
   picks[slot]=i;slot=o;renderRoster();
 });
+rosterEl.addEventListener('keydown',e=>{const sk=e.target.closest('[data-sk]');if(sk&&(e.key==='Enter'||e.key===' ')){e.preventDefault();e.stopPropagation();openSk(sk)}if(e.key==='Escape')closeSk()});
+document.addEventListener('pointerdown',e=>{if(skOpen&&!e.target.closest('#skpop')&&!e.target.closest('[data-sk]'))closeSk()});
 document.querySelectorAll('[data-slot]').forEach(b=>b.addEventListener('click',()=>{slot=+b.dataset.slot;renderRoster()}));
 document.getElementById('rnd').addEventListener('click',()=>{
   const a=RI(0,ROSTER.length-1);let b=RI(0,ROSTER.length-2);if(b>=a)b++;picks=MODE==='gauntlet'?[a,picks[1]]:[a,b];renderRoster();
