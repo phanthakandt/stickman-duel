@@ -174,7 +174,7 @@ const ROSTER=[
   {name:'เพลิงกัลป์',ult:'breath',stance:'katsugi',alt:['#8fd4ff','#245a8a'],col:'#ff7a1a',dark:'#a8380a',acc:'flame',style:'สายเผาผลาญ',desc:'จุดไฟดาบและกาย เผาศัตรูทีละน้อย',agg:0.68,pb:0.26,agi:0.12,jumpy:.1,spd:2.6,pow:1.19},
   {name:'พฤกษาพนาลี',ult:'grove',stance:'kubi',alt:['#c9d94a','#5f6a12'],col:'#2bb35a',dark:'#0e5a26',acc:'leaf',style:'สายพงไพร',desc:'เรียกต้นไม้กระแทก หญ้าพันธนาการ',agg:0.66,pb:0.35,agi:.16,jumpy:.1,spd:2.5,pow:1.04},
   {name:'โลหิตราชันย์',ult:'roar',stance:'oni',alt:['#e8e8f0','#5a5a6a'],col:'#e0142e',dark:'#5c0612',acc:'horns',style:'สายคลั่งโลหิต',desc:'คมดาบคริแน่นอน เกราะโลหิต คำรามคลั่ง',agg:.8,pb:0.29,agi:0.13,jumpy:.08,spd:2.6,pow:1.09},
-  {name:'จันทราสะท้อน',ult:'mimic',stance:'seigan',alt:['#ffd6f0','#7a4a6a'],col:'#eef0ff',dark:'#5f6280',acc:'mask',style:'สายเงาสะท้อน',desc:'ทุกท่าสุ่มยืมมาจากนักดาบคนอื่น',agg:.66,pb:0.33,agi:.18,jumpy:.12,spd:2.7,pow:1.05}
+  {name:'จันทราสะท้อน',ult:'mimic',stance:'seigan',alt:['#ffd6f0','#7a4a6a'],col:'#eef0ff',dark:'#5f6280',acc:'mask',style:'สายเงาสะท้อน',desc:'ทุกท่าสุ่มยืมมาจากนักดาบคนอื่น',agg:.66,pb:0.32,agi:.18,jumpy:.12,spd:2.7,pow:1.02}
 ];
 let fxsDummy=0,F=[],projs=[],parts=[],pops=[],G={f:0},logItems=[],picks=[0,1],slot=0,selecting=true;
 function mk(i,r){const o=Object.assign({id:i,wins:0,ultCd:0},ROSTER[r]);if(i===1&&picks[0]===picks[1]){o.col=o.alt[0];o.dark=o.alt[1];o.name+=' II'}return o}
@@ -669,7 +669,10 @@ const MANA=100/3;
 const KIT=()=>ROSTER.map(r=>r.ult).filter(k=>k!=='mimic');
 const kitOf=f=>f.ult==='mimic'?(f.borrow||'dash'):f.ult;
 const nameOfKit=k=>(ROSTER.find(r=>r.ult===k)||{}).name||'';
-function castSkill(f,o,big){sfx('cast',big);if(f.ult==='mimic'){const ks=KIT();f.borrow=ks[Math.floor(Math.random()*ks.length)]}
+const pickKit=()=>{const ks=KIT();return ks[Math.floor(Math.random()*ks.length)]};
+// the mimic rolls which move it will borrow *before* deciding, then judges the moment exactly like that move's owner would
+function mimicKit(f,big){const k=big?'pre2':'pre1';if(!f[k])f[k]=pickKit();return f[k]}
+function castSkill(f,o,big){sfx('cast',big);if(f.ult==='mimic'){const k=big?'pre2':'pre1';f.borrow=f[k]||pickKit();f[k]=pickKit();f.borrowPow=(ROSTER.find(r=>r.ult===f.borrow)||f).pow}
   f.en-=big?2*MANA:MANA;f.big=!!big;f.aid++;f.blockAt=0;f.s=o.x>f.x?1:-1;set(f,'skill');f.vx=0;f.upose=ST[f.stance||'chudan'];f.uk=.35;
   const S=(big?SKILL2:SKILL)[kitOf(f)];pop(Math.max(170,Math.min(W-170,f.x)),f.y-165,S.name,f.col,big?3:1);
   if(f.ult==='mimic')pop(Math.max(170,Math.min(W-170,f.x)),f.y-205,'ยืมท่า '+nameOfKit(f.borrow),'#d8dcff');
@@ -684,7 +687,7 @@ function skillHit(f,o,d,x,y,kb,from){
     const c=Math.max(1,Math.round(d*.15));hurtHp(o,c);o.vx=dir*3;
     sfx('block');sparks(x,y,24,6);pop(x,y-18,'ปัด','#fff3c2');G.hitstop=5;if(o.hp<=0)ko(f,o);return 'block';
   }
-  d=Math.round(d*f.pow);hurtHp(o,d);set(o,'hurt');o.vx=dir*(kb||6);o.vy=-4;
+  d=Math.round(d*(f.ult==='mimic'&&f.borrowPow?Math.max(f.pow,f.borrowPow):f.pow));hurtHp(o,d);set(o,'hurt');o.vx=dir*(kb||6);o.vy=-4;
   burst(x,y,'#fff',10,5);burst(x,y,f.col,14,4);pop(x+R(-10,10),y-16,'-'+d,'#fff');
   sfx('hit',0);G.hitstop=6;G.shake=6;o.en=Math.min(100,o.en+d*2);
   if(o.hp<=0)ko(f,o);return 'hit';
@@ -880,8 +883,8 @@ function brain(f,o){
   if(f.cd>0){f.cd--;if(f.st==='walk'&&f.wd===dir&&d<125)idle(f);return}
   const r=Math.random();
   const spend=f.hp>=50||f.ultCd>240;
-  if(f.en>=2*MANA&&spend&&Math.random()<(f.ult==='mimic'?.3:SKILL2[f.ult].want(d,f))*.8){castSkill(f,o,1);return}
-  if(f.en>=MANA&&f.en<2*MANA&&spend&&r<(f.ult==='mimic'?.3:SKILL[f.ult].want(d,f))*.35){castSkill(f,o);return}
+  if(f.en>=2*MANA&&spend&&Math.random()<SKILL2[f.ult==='mimic'?mimicKit(f,1):f.ult].want(d,f)*.8){castSkill(f,o,1);return}
+  if(f.en>=MANA&&f.en<2*MANA&&spend&&r<SKILL[f.ult==='mimic'?mimicKit(f,0):f.ult].want(d,f)*.35){castSkill(f,o);return}
   if(d>135){
     if(d<290&&r<f.jumpy){jump(f,dir);return}
     f.st='walk';f.wd=dir;f.cd=RI(10,30);return;
