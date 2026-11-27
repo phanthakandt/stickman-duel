@@ -488,7 +488,7 @@ function runUlt(){
     return;
   }
   const e=t-110;
-  if(ULT[kitOf(f)](f,o,e)&&!ufx.length)endUlt();
+  if(monoRun(f.ult==='mimic',()=>ULT[kitOf(f)](f,o,e))&&!ufx.length)endUlt();
 }
 function ultHit(f,o,d,fin,x,y){sfx(fin?'boom':'hit',0);
   x=x??o.x;y=y??o.y-90;d=Math.round(d*1.6);hurtHp(o,d);o.fl=5;
@@ -511,7 +511,30 @@ function thunder(f,o,tx,delay,dmg,w,stun,ult){return{t:0,upd(){this.t++;
   draw(){if(this.t>=delay)return;const a=.4+.4*Math.sin(this.t*.8);ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=a;ctx.strokeStyle=f.col;ctx.lineWidth=2;
     ctx.beginPath();ctx.ellipse(tx,GY+2,50*w,11*w,0,0,7);ctx.stroke();ctx.globalAlpha=a*.35;ctx.fillStyle=f.col;ctx.fillRect(tx-2,0,4,GY);ctx.restore()}}}
 /* ---------- fire: flames, burning, buffs ---------- */
-function flame(f,x,y,vx,vy,r,life){parts.push({x,y,vx,vy,r,life,max:life,fire:1,fl:1,pal:['#fff4c8',f.col,f.dark],col:f.col})}
+/* ---------- mirror (จันทราสะท้อน): anything it borrows from another sword is drawn in black and white ---------- */
+const gray=c=>{if(typeof c!=='string'||c[0]!=='#')return c;let h=c.slice(1);if(h.length<=4)h=h.split('').map(x=>x+x).join('');
+  const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16),l=Math.round(Math.min(255,Math.max(0,(.3*r+.59*g+.11*b-128)*1.15+128))).toString(16).padStart(2,'0');return '#'+l+l+l+h.slice(6)};
+function monoPart(p){if(p.mono)return;p.mono=1;p.col=gray(p.col);if(p.pal)p.pal=p.pal.map(gray)}
+// runs fn; every particle, effect and summoned object it creates is marked as borrowed
+function monoRun(on,fn){if(!on)return fn();const a=parts.length,b=fxs.length,c=ufx.length,d=props.length;let r;try{r=fn()}finally{
+  for(let i=a;i<parts.length;i++)monoPart(parts[i]);for(let i=b;i<fxs.length;i++)fxs[i].mono=1;for(let i=c;i<ufx.length;i++)ufx[i].mono=1;for(let i=d;i<props.length;i++)props[i].mono=1}return r}
+const FILTER_OK=(()=>{try{const t=document.createElement('canvas');t.width=t.height=2;const x=t.getContext('2d');x.filter='grayscale(1)';x.fillStyle='#f00';x.fillRect(0,0,2,2);const d=x.getImageData(0,0,1,1).data;return Math.abs(d[0]-d[1])<8}catch(e){return false}})();
+let MA=null,MB=null;
+function monoLayer(draw){ // draws in greyscale: canvas filter where supported, otherwise a desaturating scratch layer
+  if(FILTER_OK){ctx.save();ctx.filter='grayscale(1) contrast(1.15)';try{draw()}finally{ctx.restore()}return}
+  if(!MA){MA=document.createElement('canvas');MB=document.createElement('canvas')}
+  for(const c of [MA,MB])if(c.width!==cv.width||c.height!==cv.height){c.width=cv.width;c.height=cv.height}
+  const a=MA.getContext('2d'),b=MB.getContext('2d'),m=ctx.getTransform(),keep=ctx;
+  a.setTransform(1,0,0,1,0,0);a.globalAlpha=1;a.globalCompositeOperation='source-over';a.clearRect(0,0,MA.width,MA.height);a.setTransform(m);
+  ctx=a;try{draw()}finally{ctx=keep}
+  b.setTransform(1,0,0,1,0,0);b.globalAlpha=1;b.globalCompositeOperation='source-over';b.clearRect(0,0,MB.width,MB.height);b.drawImage(MA,0,0);
+  b.globalCompositeOperation='saturation';b.fillStyle='#808080';b.fillRect(0,0,MB.width,MB.height);
+  b.globalCompositeOperation='destination-in';b.drawImage(MA,0,0);b.globalCompositeOperation='source-over';
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.drawImage(MB,0,0);ctx.restore();
+}
+function drawSplit(list,fn){const m=[];list.forEach(u=>u.mono?m.push(u):fn(u));return m}
+const monoBuffed=f=>f.ult==='mimic'&&(f.rage>0||f.fireBody>0||f.fireBlade>0||f.shield>0||f.critNext||f.st==='skill'||f.st==='ult');
+function flame(f,x,y,vx,vy,r,life){const p={x,y,vx,vy,r,life,max:life,fire:1,fl:1,pal:['#fff4c8',f.col,f.dark],col:f.col};if(f.ult==='mimic')monoPart(p);parts.push(p)}
 function ignite(f,o,dur){if(o.st==='ko')return;sfx('fire');if(!(o.burn>0))pop(o.x,o.y-150,'ติดไฟ!',f.col,1);o.burn=Math.max(o.burn||0,dur);o.burnSrc=f}
 function fireTick(f,o){
   if(f.fireBlade>0){f.fireBlade--;if(f.gripW&&f.tipW&&G.f%2===0){const u=R(.15,1);flame(f,f.gripW[0]+(f.tipW[0]-f.gripW[0])*u,f.gripW[1]+(f.tipW[1]-f.gripW[1])*u,R(-.4,.4),-R(.6,1.8),R(2,4),RI(14,24))}}
@@ -986,7 +1009,7 @@ function update(f,o,think){
     if(ATK[f.st]&&f.t>=A.end)idle(f);
   }
   switch(f.st){
-    case 'skill':if((f.big?SKILL2:SKILL)[kitOf(f)].run(f,o,f.t))idle(f);break;
+    case 'skill':if(monoRun(f.ult==='mimic',()=>(f.big?SKILL2:SKILL)[kitOf(f)].run(f,o,f.t)))idle(f);break;
     case 'block':case 'parry':case 'recoil':if(f.t>=f.dur)idle(f);break;
     case 'hurt':if(f.hd&&f.t%3===0)parts.push({x:f.x+R(-20,20),y:f.y-R(20,130),vx:R(-2,2),vy:R(-2,2),life:8,col:Math.random()<.5?'#fff':'#ff8fd0',r:R(1,2),sp:1});
       if(f.t>=(f.hd||16)&&f.y>=GY)idle(f);break;
@@ -1004,7 +1027,7 @@ function update(f,o,think){
   if(G.phase==='fight')f.en=Math.min(100,f.en+.05);
   fireTick(f,o);
   if(f.rooted>0){f.rooted--;f.vx=0}
-  if(f.rage>0){if(G.phase==='fight'&&!G.ult)f.rage--;if(G.f%2===0)parts.push({x:f.x+R(-20,20),y:f.y-R(10,130),vx:R(-.4,.4),vy:-R(1,2.5),life:RI(16,28),col:Math.random()<.5?f.col:'#ff8a8a',r:R(1.5,3),fl:1})}
+  if(f.rage>0){if(G.phase==='fight'&&!G.ult)f.rage--;if(G.f%2===0)monoRun(f.ult==='mimic',()=>parts.push({x:f.x+R(-20,20),y:f.y-R(10,130),vx:R(-.4,.4),vy:-R(1,2.5),life:RI(16,28),col:Math.random()<.5?f.col:'#ff8a8a',r:R(1.5,3),fl:1}))}
   if(f.shieldT>0){f.shieldT--;if(f.shieldT<=0&&f.shield>0){f.shield=0;shatter(f)}}
   if(f.critNext&&G.f%3===0&&f.gripW&&f.tipW){const u=Math.random();parts.push({x:f.gripW[0]+(f.tipW[0]-f.gripW[0])*u,y:f.gripW[1]+(f.tipW[1]-f.gripW[1])*u,vx:0,vy:R(.5,1.5),life:20,col:f.col,r:R(1.5,2.5)})}
   if(f.ultCd>0&&G.phase==='fight'&&!G.ult)f.ultCd--;
@@ -1032,8 +1055,8 @@ function step(){
   if(G.msg)G.msg.t++;
   G.shake*=.85;
   if(G.hitstop>0){G.hitstop--;return}
-  props.forEach(u=>u.upd());props=props.filter(u=>!u.dead);
-  ufx.forEach(u=>u.upd());ufx=ufx.filter(u=>!u.dead);
+  props.forEach(u=>monoRun(u.mono,()=>u.upd()));props=props.filter(u=>!u.dead);
+  ufx.forEach(u=>monoRun(u.mono,()=>u.upd()));ufx=ufx.filter(u=>!u.dead);
   if(G.ult)runUlt();
   G.pt++;
   const [a,b]=F,fight=G.phase==='fight'&&!G.ult;
@@ -1275,8 +1298,8 @@ function render(){
   ctx.translate(W/2,H/2);ctx.scale(cm.z,cm.z);ctx.translate(-cm.x,-cm.y);
   ctx.drawImage(bg,0,0,W,H);
   if(G.dark>.01){ctx.fillStyle=`rgba(0,0,0,${G.dark})`;ctx.fillRect(-W,-H,W*3,H*3)}
-  props.forEach(u=>u.draw());
-  [...F].sort((a,b)=>(a.st==='ko')-(b.st==='ko')).reverse().forEach(drawFighter);
+  {const m=drawSplit(props,u=>u.draw());if(m.length)monoLayer(()=>m.forEach(u=>u.draw()))}
+  [...F].sort((a,b)=>(a.st==='ko')-(b.st==='ko')).reverse().forEach(f=>monoBuffed(f)?monoLayer(()=>drawFighter(f)):drawFighter(f));
   projs.forEach(p=>{
     ctx.save();ctx.translate(p.x,p.y);ctx.scale(Math.sign(p.vx),1);
     ctx.shadowColor=p.o.col;ctx.shadowBlur=22;ctx.fillStyle=p.o.col;
@@ -1284,8 +1307,8 @@ function render(){
     ctx.shadowBlur=0;ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(-14,0,38,-.9,.9);ctx.stroke();
     ctx.restore();
   });
-  ufx.forEach(u=>u.draw());
-  fxs.forEach(drawFx);
+  {const mu=drawSplit(ufx,u=>u.draw()),mf=drawSplit(fxs,drawFx);if(mu.length||mf.length)monoLayer(()=>{mu.forEach(u=>u.draw());mf.forEach(drawFx)})}
+  
   parts.forEach(p=>{
     ctx.globalAlpha=Math.min(1,p.life/12);
     if(p.fire){const u=p.life/p.max;ctx.globalCompositeOperation=p.wet?'source-over':'lighter';ctx.globalAlpha=Math.min(1,u*1.4)*(p.wet?.7:.8);ctx.fillStyle=p.pal[u>.62?0:u>.3?1:2];ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.fill();ctx.globalCompositeOperation='source-over'}
