@@ -45,7 +45,7 @@ body:not(.picking) .bar{max-width:max(560px,calc((100dvh - 96px)*16/9));margin-i
 .vsx{font:clamp(24px,4vw,40px) Bungee,sans-serif;color:var(--gold);text-shadow:0 3px 0 #120a07}
 .hint{margin:0;text-align:center;color:var(--mute)}
 .roster{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-@media(min-width:1001px){.roster{grid-template-columns:repeat(7,minmax(0,1fr))}.roster .ch .n{font-size:17px}.roster .ch{grid-template-columns:1fr;justify-items:center;text-align:center;padding:10px 12px 12px}.roster .ch .ms{width:100%;text-align:left}}
+@media(min-width:1001px){.roster{grid-template-columns:repeat(5,minmax(0,1fr))}.roster .ch .n{font-size:17px}.roster .ch{grid-template-columns:1fr;justify-items:center;text-align:center;padding:10px 12px 12px}.roster .ch .ms{width:100%;text-align:left}}
 @media(max-width:1000px){.roster{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ch{position:relative;background:#221a15;border:2px solid var(--line);border-radius:12px;padding:8px 12px 10px 6px;display:grid;grid-template-columns:104px minmax(0,1fr);gap:8px;align-items:center;text-align:left;font-weight:400;min-height:0}
 .ch.p0,.ch.p1{border-color:currentColor}
@@ -196,11 +196,12 @@ const ROSTER=[
   {name:'จันทราสะท้อน',ult:'mimic',stance:'seigan',alt:['#ffd6f0','#7a4a6a'],col:'#eef0ff',dark:'#5f6280',acc:'mask',style:'สายเงาสะท้อน',desc:'ทุกท่าสุ่มยืมมาจากนักดาบคนอื่น',agg:.66,pb:0.32,agi:.18,jumpy:.12,spd:2.7,pow:1.06},
   {name:'นทีสมุทร',ult:'tide',stance:'nagare',alt:['#7fffd4','#1f6f5f'],col:'#3d6cff',dark:'#122a7a',acc:'topknot',style:'สายวารี',desc:'บอลน้ำ น้ำพุพุ่ง คลื่นยักษ์ซัด',agg:0.67,pb:0.33,agi:.18,jumpy:.12,spd:2.7,pow:1.06},
   {name:'บุปผามัจจุราช',ult:'bloom',stance:'hana',alt:['#ffd84a','#8a6a12'],col:'#e255e0',dark:'#7a1f78',acc:'thorn',style:'สายบุปผาพิษ',desc:'ดอกไม้ดูดเลือด ทางดอกไม้พิษทำให้เชื่องช้า',agg:.62,pb:.3,agi:.18,jumpy:.12,spd:2.7,pow:1},
-  {name:'เหมันต์ธารา',ult:'glacier',stance:'yuki',alt:['#d6c2ff','#5a4a99'],col:'#a8f0ff',dark:'#2a7a99',acc:'icicle',style:'สายเหมันต์',desc:'สะสมแต้มน้ำแข็งครบ 3 แล้วแตกระเบิด แช่แข็งศัตรู',agg:.66,pb:.34,agi:.16,jumpy:.1,spd:2.7,pow:1.06}
+  {name:'เหมันต์ธารา',ult:'glacier',stance:'yuki',alt:['#d6c2ff','#5a4a99'],col:'#a8f0ff',dark:'#2a7a99',acc:'icicle',style:'สายเหมันต์',desc:'สะสมแต้มน้ำแข็งครบ 3 แล้วแตกระเบิด แช่แข็งศัตรู',agg:.66,pb:.34,agi:.16,jumpy:.1,spd:2.7,pow:1.06},
+  {name:'อนันตดารา',ult:'void',stance:'sora',alt:['#ffd27a','#7a5a1a'],col:'#8f7bff',dark:'#2a1f6b',acc:'orbit',style:'สายต่างมิติ',desc:'ฟันอากาศแตกเป็นแก้ว พาศัตรูหายเข้ามิติ ฉีกห้วงอวกาศ',agg:.64,pb:.3,agi:.2,jumpy:.14,spd:2.8,pow:1}
 ];
 let fxsDummy=0,F=[],projs=[],parts=[],pops=[],G={f:0},logItems=[],picks=[0,1],slot=0,selecting=true;
 function mk(i,r){const o=Object.assign({id:i,wins:0,ultCd:0},ROSTER[r]);if(i===1&&picks[0]===picks[1]){o.col=o.alt[0];o.dark=o.alt[1];o.name+=' II'}return o}
-function resetF(f){Object.assign(f,{rage:0,slow:0,frost:0,frostT:0,frostSrc:null,iceBlade:0,frozen:0,frozenSrc:null,poison:0,poisonSrc:null,shield:0,shieldT:0,critNext:false,rooted:0,fireBlade:0,fireBody:0,burn:0,burnSrc:null,ultUsed:false,fl:0,upose:null,blockAt:0,counter:false,trail:[],x:f.id?660:300,y:GY,vx:0,vy:0,s:f.id?-1:1,hp:100,gh:100,en:0,st:'idle',t:0,cd:RI(20,40),hit:false,p:null,ph:0,wd:1,aid:0,seen:-1,used:false,dur:0})}
+function resetF(f){Object.assign(f,{rage:0,slow:0,banished:0,frost:0,frostT:0,frostSrc:null,iceBlade:0,frozen:0,frozenSrc:null,poison:0,poisonSrc:null,shield:0,shieldT:0,critNext:false,rooted:0,fireBlade:0,fireBody:0,burn:0,burnSrc:null,ultUsed:false,fl:0,upose:null,blockAt:0,counter:false,trail:[],x:f.id?660:300,y:GY,vx:0,vy:0,s:f.id?-1:1,hp:100,gh:100,en:0,st:'idle',t:0,cd:RI(20,40),hit:false,p:null,ph:0,wd:1,aid:0,seen:-1,used:false,dur:0})}
 const set=(f,st)=>{f.st=st;f.t=0;f.hit=false;f.hd=0};
 const idle=f=>set(f,'idle');
 
@@ -223,7 +224,8 @@ const ST={
   seigan:[.08,22,-8,2.3,.5,.1,-.35,-.55],
   nagare:[.15,24,30,1.4,.6,.15,-.45,-.65],
   hana:[.12,-4,20,2.6,.55,.12,-.4,-.6],
-  yuki:[.1,24,14,1.8,.55,.12,-.4,-.6]
+  yuki:[.1,24,14,1.8,.55,.12,-.4,-.6],
+  sora:[.15,-10,10,2.0,.6,.15,-.45,-.65]
 };
 const ATK={
   // four normal cuts, light to heavy
@@ -390,6 +392,8 @@ const SFX={
     lf.frequency.value=23;lg.gain.value=9;lf.connect(lg);lg.connect(o.frequency);lp.type='lowpass';lp.frequency.setValueAtTime(900,t);lp.frequency.exponentialRampToValueAtTime(300,t+1.3);env(g,t,.06,.7,1.3);o.connect(lp);lp.connect(g);g.connect(SFXG);g.connect(REV);o.start(t);lf.start(t);o.stop(t+1.5);lf.stop(t+1.5);
     nz(t,{type:'bandpass',f:[[0,500],[1.2,250]],q:1.2,a:.06,d:1.2,peak:.6,rev:1});thump(t,55,1,.8)},
   shatter(){const t=AC.currentTime;for(let k=0;k<6;k++)nz(t+k*.025,{type:'bandpass',f:[[0,R(2500,6000)]],q:4,d:.12,peak:.4});nz(t,{type:'lowpass',f:[[0,1500],[.3,200]],d:.3,peak:.4})},
+  glass(){const t=AC.currentTime;for(let k=0;k<8;k++)nz(t+k*.018,{type:'bandpass',f:[[0,R(3500,8000)]],q:6,d:.09,peak:.32});steel(t,R(900,1100),.9,.1,1,1)},
+  warp(){const t=AC.currentTime;tone(t,'sine',900,90,.5,.18,SFXG,1,.02);tone(t,'triangle',1400,140,.45,.08,SFXG,1,.02);nz(t,{f:[[0,3000],[.5,300]],q:2,a:.05,d:.45,peak:.2,rev:1})},
   frost(){const t=AC.currentTime;nz(t,{type:'highpass',f:[[0,6000],[.3,3500]],q:.7,a:.03,d:.3,peak:.22});nz(t,{f:[[0,1800],[.3,900]],q:1,a:.03,d:.25,peak:.12})},
   freeze(){const t=AC.currentTime;for(let k=0;k<7;k++)nz(t+k*.03,{type:'bandpass',f:[[0,R(3000,7000)]],q:5,d:.08,peak:.35});steel(t+.05,620,1.2,.12,1,.8);thump(t,70,.4,.5)},
   bloom(){const t=AC.currentTime;[659,784,988,1319].forEach((fr,k)=>tone(t+k*.05,'sine',fr,fr*1.01,.5,.08,SFXG,1,.01));nz(t,{type:'bandpass',f:[[0,3000],[.3,5000]],q:1.5,a:.02,d:.25,peak:.12})},
@@ -442,7 +446,7 @@ function deflect(o,cx,cy){sfx('deflect');
   G.hitstop=13;G.shake=8;
 }
 function strike(f,o,A){
-  if(o.st==='ko')return;
+  if(o.st==='ko'||o.banished>0)return;
   const dx=(o.x-f.x)*f.s;
   if(dx<-10||dx>A.rg||Math.abs(o.y-f.y)>80)return;
   f.hit=true;const dmg=Math.round(R(A.dmg[0],A.dmg[1])*f.pow*weak(f)*(f.iceBlade>0?1.15:1));
@@ -776,6 +780,14 @@ const ULT={
     if(e===82)cut(f,o,0,6,1);
     return e>=115;
   },
+  void(f,o,e){ // อนันตดารา: one savage cut tears space open; the foe is battered by the void inside
+    if(e===0){set(f,'ult');f.upose=ATK.men.A;f.uk=.5}
+    if(e===12){f.upose=ATK.men.B;f.uk=1;sfx('glass');sfx('boom');G.white=.6;G.shake=18;ufx.push(rift(f,o));ufx.push(crack(f,o.x,o.y-100,1.8))}
+    if(e>=30&&e<90&&e%10===0){ultHit(f,o,5,0,o.x+R(-20,20),o.y-90+R(-40,40));if(e%20===0)ufx.push(crack(f,o.x+R(-60,60),o.y-100+R(-50,50),.7))}
+    if(e===100)ultHit(f,o,16,1);
+    if(e===104){f.upose=ST.sora;f.uk=.3}
+    return e>=130;
+  },
   glacier(f,o,e){ // เหมันต์ธารา: a glacier swallows the foe, freezing them solid while the cold bites
     if(e===0){set(f,'ult');f.upose=[.3,30,30,1.2,.75,.22,-.55,-.75];f.uk=.4}
     if(e===6){sfx('frost');ufx.push(iceTrail(f,f.x+f.s*40,o.x))}
@@ -822,7 +834,7 @@ function castSkill(f,o,big){sfx('cast',big);if(f.ult==='mimic'){const k=big?'pre
   if(big){fxs.push({ty:'ring',x:f.x,y:GY,col:f.col,t:0,life:36});sparks(f.x,f.y-90,26,6);G.shake=Math.max(G.shake,5)}
 }
 function skillHit(f,o,d,x,y,kb,from){
-  if(o.st==='ko'||G.ult)return 'miss';
+  if(o.st==='ko'||G.ult||o.banished>0)return 'miss';
   x=x??o.x;y=y??o.y-90;const dir=Math.sign(o.x-(from??f.x))||f.s;
   const facing=from==null||o.s===Math.sign(from-o.x);
   if((o.st==='block'||o.st==='parry')&&facing){
@@ -910,6 +922,11 @@ const SKILL={
       const r=skillHit(f,o,9,o.x,o.y-90,6,x1);if(r==='hit')slashFx(o.x,o.y-90,R(-1,1),f.col);if(r==='deflect'){set(f,'recoil');f.dur=26}}
     if(t===26){f.s=o.x>f.x?1:-1;f.upose=IAI;f.uk=.3}
     return t>=36}},
+  void:{name:'ฟันมิติ',lead:12,want:d=>d<240?.4:.05,run(f,o,t){ // a cut that cracks the air itself like glass
+    if(t===1){f.upose=ATK.kesa.A;f.uk=.5}
+    if(t===10){f.upose=ATK.kesa.B;f.uk=1;arcFx(f,ATK.kesa);const inR=(o.x-f.x)*f.s>-10&&Math.abs(o.x-f.x)<240&&o.y>GY-140;
+      ufx.push(crack(f,inR?o.x:f.x+f.s*150,f.y-100,1));sfx('glass');if(inR)skillHit(f,o,12,o.x,o.y-100,5,f.x)}
+    return t>=30}},
   glacier:{name:'ไอเหมันต์',lead:12,want:d=>d<220?.45:.05,run(f,o,t){ // a breath of freezing mist; a hit adds one frost stack
     if(t===1){f.upose=[.3,8,28,-1.1,.75,.22,-.55,-.75];f.uk=.4}
     if(t>=8&&t<30){const mx=f.x+f.s*30,my=f.y-120;if(t%7===1)sfx('frost');for(let i=0;i<5;i++)frostP(f,mx,my+R(-4,4),f.s*R(8,13),R(-1.6,1.6)+.4,R(3,7),RI(18,28))}
@@ -1009,6 +1026,42 @@ function glacier(f,o,x,life){const ks=Array.from({length:11},(_,i)=>({dx:(i-5)*1
 function iceTrail(f,x0,x1){const dir=Math.sign(x1-x0)||f.s,n=Math.max(2,Math.floor(Math.abs(x1-x0)/34));return{t:0,upd(){this.t++;if(this.t%2===0&&this.t/2<=n){sfx('rustle');const xx=x0+dir*34*(this.t/2);for(let i=0;i<4;i++)parts.push({x:xx+R(-8,8),y:GY-2,vx:R(-1.5,1.5),vy:-R(1,4),life:RI(12,22),col:'#e8fbff',r:R(1.5,3),sp:1})}if(this.t>n*2+40)this.dead=1},
   draw(){const k=Math.min(n,Math.floor(this.t/2)),a=Math.min(1,(n*2+40-this.t)/20);ctx.save();ctx.globalAlpha=a;for(let i=1;i<=k;i++){const xx=x0+dir*34*i,h=18+i*4;
     ctx.fillStyle='rgba(200,240,255,.8)';ctx.beginPath();ctx.moveTo(xx-8,GY);ctx.lineTo(xx+dir*4,GY-h);ctx.lineTo(xx+8,GY);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke()}ctx.restore()}}}
+/* ---------- void (อนันตดารา): cracking space like glass, banishing the foe, tearing a rift ---------- */
+function crack(f,x,y,sc){const rays=Array.from({length:11},(_,i)=>{const a=i/11*6.28+R(-.2,.2),L=R(45,85)*sc,pts=[[0,0]];for(let k=1;k<=4;k++)pts.push([Math.cos(a+R(-.25,.25))*L*k/4,Math.sin(a+R(-.25,.25))*L*k/4]);return pts});
+  return{t:0,life:36,upd(){this.t++;if(this.t===24){sfx('glass');for(let i=0;i<26;i++){const a=R(0,6.28),v=R(2,7);parts.push({x:x+Math.cos(a)*R(5,40)*sc,y:y+Math.sin(a)*R(5,40)*sc,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:RI(16,30),col:Math.random()<.6?'#ffffff':f.col,r:R(1.5,3),sp:1})}}if(this.t>=this.life)this.dead=1},
+  draw(){const g=Math.min(1,this.t/4),a=Math.min(1,(this.life-this.t)/12);ctx.save();ctx.translate(x,y);ctx.globalAlpha=a;
+    const hole=ctx.createRadialGradient(0,0,2,0,0,40*sc);hole.addColorStop(0,'#05030fcc');hole.addColorStop(1,'#05030f00');ctx.fillStyle=hole;ctx.beginPath();ctx.arc(0,0,40*sc,0,7);ctx.fill();
+    ctx.lineJoin='round';ctx.shadowColor=f.col;ctx.shadowBlur=12;ctx.strokeStyle='#ffffff';ctx.lineWidth=1.8;
+    rays.forEach(p=>{ctx.beginPath();const n=Math.max(1,Math.round((p.length-1)*g));ctx.moveTo(0,0);for(let k=1;k<=n;k++)ctx.lineTo(p[k][0],p[k][1]);ctx.stroke()});
+    ctx.lineWidth=1.2;ctx.strokeStyle=f.col;[2,3].forEach(k=>{if(g<1)return;ctx.beginPath();rays.forEach((p,i)=>i?ctx.lineTo(p[k][0],p[k][1]):ctx.moveTo(p[k][0],p[k][1]));ctx.closePath();ctx.stroke()});
+    ctx.restore()}}}
+function voidGate(f,o,x){let held=false,out=false;const ry=90;
+  return{t:0,upd(){const t=++this.t;
+      if(t===18){if(Math.abs(o.x-x)<70&&o.st!=='ko'&&!G.ult&&!(o.banished>0)){held=true;sfx('warp');o.banished=92;o.vx=o.vy=0;set(o,'stun');pop(o.x,o.y-170,'หายไปในมิติ!',f.col,1);sparks(o.x,o.y-80,30,7)}}
+      if(held&&t===106){held=false;out=true;if(o.st!=='ko'){o.banished=0;o.y=GY-110;o.vy=1;set(o,'hurt');o.hd=22;sfx('warp');sparks(o.x,o.y-60,30,7);
+        if(Math.random()<.5){const h=12;healHp(f,h);f.gh=Math.max(f.gh,f.hp);pop(f.x,f.y-160,'+'+h+' มิติเยียวยา','#7dffa0',1);sfx('heal');
+          for(let i=0;i<14;i++)parts.push({x:o.x+R(-20,20),y:o.y-R(40,140),vx:(f.x-o.x)/26+R(-1,1),vy:R(-2,1),life:28,col:'#9dffb0',r:R(2,3.5),fl:1})}
+        else{const d=Math.round(18*f.pow);hurtHp(o,d);o.fl=6;pop(o.x,o.y-140,'-'+d,f.col,1);pop(o.x,o.y-195,'แรงบีบมิติ!',f.col,1);flashFx(o.x,o.y-80,120);G.shake=Math.max(G.shake,10);sfx('hit',1);if(o.hp<=0)ko(f,o)}}}
+      if(t>=(out?130:held?200:42))this.dead=1},
+    draw(){const t=this.t,op=out?(t<106?1:Math.max(0,1-(t-106)/24)):held?(t<40?Math.max(0,1-(t-18)/22):t<88?0:Math.min(1,(t-88)/18)):(t<18?t/18:Math.max(0,1-(t-18)/22));
+      const k=t<18?t/18:op;if(k<=0)return;const cy=GY-85,rx=36*k,yy=ry*k;ctx.save();
+      ctx.beginPath();ctx.ellipse(x,cy,rx,yy,0,0,7);const g=ctx.createRadialGradient(x,cy,4,x,cy,yy);g.addColorStop(0,'#000000');g.addColorStop(.6,'#120a33');g.addColorStop(1,f.col+'aa');ctx.fillStyle=g;ctx.fill();
+      ctx.save();ctx.clip();for(let i=0;i<14;i++){const a=G.f*.03+i*2.4,r=(i*7%yy);ctx.fillStyle='#fff';ctx.globalAlpha=.6+.4*Math.sin(G.f*.2+i);ctx.fillRect(x+Math.cos(a)*r*.4,cy+Math.sin(a)*r,1.6,1.6)}ctx.restore();
+      ctx.shadowColor=f.col;ctx.shadowBlur=18;ctx.strokeStyle=f.col;ctx.lineWidth=3;ctx.stroke();ctx.shadowBlur=0;ctx.strokeStyle='#ffffff';ctx.lineWidth=1.2;ctx.stroke();ctx.restore()}}}
+function rift(f,o){const cx=o.x,cy=o.y-100,a=f.s>0?.55:Math.PI-.55,L=560,N=18,ux=Math.cos(a),uy=Math.sin(a),nx=-uy,ny=ux;
+  const C=Array.from({length:N+1},(_,i)=>{const u=i/N,j=i&&i<N?R(-14,14):0;return[cx+ux*(u-.5)*L+nx*j,cy+uy*(u-.5)*L+ny*j,u]});
+  const stars=Array.from({length:90},()=>[cx+R(-L/2,L/2),cy+R(-L*.35,L*.35),R(.6,2.2),R(0,6)]);
+  const br=Array.from({length:12},()=>{const i=RI(2,N-2),sd=Math.random()<.5?-1:1,pts=[];let px=C[i][0],py=C[i][1];for(let k=0;k<4;k++){px+=nx*sd*R(8,18)+ux*R(-10,10);py+=ny*sd*R(8,18)+uy*R(-10,10);pts.push([px,py])}return{i,pts}});
+  return{t:0,life:150,upd(){this.t++;if(this.t%2===0&&this.t<this.life-25){const c=C[RI(2,N-2)];parts.push({x:c[0],y:c[1],vx:R(-2,2),vy:R(-2,2),life:RI(20,40),col:Math.random()<.5?'#ffffff':f.col,r:R(1,2.4),fl:1})}if(this.t>=this.life)this.dead=1},
+    draw(){const t=this.t,op=Math.min(1,t/14)*Math.min(1,(this.life-t)/25),W2=70*op;if(op<=0)return;
+      const w=u=>Math.pow(Math.sin(Math.PI*u),.8)*W2;ctx.save();
+      ctx.beginPath();C.forEach(([x,y,u],i)=>{const px=x+nx*w(u),py=y+ny*w(u);i?ctx.lineTo(px,py):ctx.moveTo(px,py)});for(let i=N;i>=0;i--){const [x,y,u]=C[i];ctx.lineTo(x-nx*w(u),y-ny*w(u))}ctx.closePath();
+      ctx.save();ctx.clip();const bg=ctx.createLinearGradient(cx-L/2,cy,cx+L/2,cy);bg.addColorStop(0,'#05030f');bg.addColorStop(.5,'#160a3a');bg.addColorStop(1,'#05030f');ctx.fillStyle=bg;ctx.fillRect(cx-L,cy-L,L*2,L*2);
+      [[cx-80,cy-20,f.col],[cx+90,cy+30,'#ff4fd8']].forEach(([x,y,c])=>{const g=ctx.createRadialGradient(x,y,4,x,y,150);g.addColorStop(0,c+'77');g.addColorStop(1,c+'00');ctx.fillStyle=g;ctx.fillRect(x-150,y-150,300,300)});
+      stars.forEach(([x,y,r,ph])=>{ctx.globalAlpha=.5+.5*Math.sin(G.f*.15+ph);ctx.fillStyle='#ffffff';ctx.fillRect(x,y,r,r)});ctx.restore();
+      ctx.lineJoin='round';ctx.shadowColor=f.col;ctx.shadowBlur=26;ctx.strokeStyle=f.col;ctx.lineWidth=4;ctx.stroke();ctx.shadowBlur=0;ctx.strokeStyle='#ffffff';ctx.lineWidth=1.6;ctx.stroke();
+      ctx.globalAlpha=op;ctx.strokeStyle='#ffffffcc';ctx.lineWidth=1.2;br.forEach(b=>{const [x,y,u]=C[b.i],sd=Math.sign((b.pts[0][0]-x)*nx+(b.pts[0][1]-y)*ny)||1;ctx.beginPath();ctx.moveTo(x+nx*w(u)*sd,y+ny*w(u)*sd);b.pts.forEach(([px,py])=>ctx.lineTo(px+nx*w(u)*sd,py+ny*w(u)*sd));ctx.stroke()});
+      ctx.restore()}}}
 /* ---------- big skills: two thirds of mana, one per sword ---------- */
 function ember(f,o,x0,x1){return{t:0,x:x0,y:GY-40,upd(){this.t++;const u=Math.min(1,this.t/26);this.x=x0+(x1-x0)*u;this.y=GY-40-Math.sin(u*Math.PI)*110+u*40;
     if(this.t%2)parts.push({x:this.x,y:this.y,vx:R(-.4,.4),vy:-R(.5,1.5),life:14,col:f.col,r:R(1.5,3),fl:1});
@@ -1082,6 +1135,10 @@ const SKILL2={
     if(t===22||t===36){f.upose=IAI;f.uk=.6}
     if(t===52){f.upose=IAI;f.uk=.25}
     return t>=62}},
+  void:{name:'ประตูมิติ',lead:99,want:d=>d<300?.38:.15,run(f,o,t){ // a portal swallows the foe; when they come back, either the caster heals or the foe is crushed
+    if(t===1){f.upose=[.1,20,-10,2.4,.5,.1,-.4,-.6];f.uk=.45}
+    if(t===8){f.upose=[.3,36,4,1.57,...LL];f.uk=.9;sfx('warp');ufx.push(voidGate(f,o,o.x))}
+    return t>=26}},
   glacier:{name:'ดาบเหมันต์',lead:99,want:(d,f)=>f.iceBlade>0?0:d<260?.5:.2,run(f,o,t){ // coat the blade in ice: every landed cut adds a frost stack
     if(t===1){f.upose=[0,10,-6,3.05,.5,.1,-.4,-.6];f.uk=.4}
     if(t===12){sfx('freeze');f.iceBlade=600;if(f.gripW&&f.tipW)for(let i=0;i<24;i++){const u=Math.random();parts.push({x:f.gripW[0]+(f.tipW[0]-f.gripW[0])*u,y:f.gripW[1]+(f.tipW[1]-f.gripW[1])*u,vx:R(-2,2),vy:R(-2,1),life:RI(18,28),col:Math.random()<.5?'#ffffff':f.col,r:R(1.5,3),sp:1})}flashFx(f.tipW?f.tipW[0]:f.x,f.tipW?f.tipW[1]:f.y-120,60)}
@@ -1112,7 +1169,7 @@ function brain(f,o){
     if(!f.used&&d<150&&f.vy>-7&&Math.sign(f.vx)===dir){set(f,'airslash');f.used=true;f.aid++}
     return;
   }
-  if(f.en>=100&&f.hp<40&&f.ultCd<=0&&o.st!=='ko'&&f.y>=GY){startUlt(f,o);return}
+  if(f.en>=100&&f.hp<40&&f.ultCd<=0&&o.st!=='ko'&&!(o.banished>0)&&f.y>=GY){startUlt(f,o);return}
   const A=ATK[o.st],melee=(A&&A.rg>0&&d<210&&o.t<A.w)||(o.st==='skill'&&o.t<10&&(o.big?SKILL2:SKILL)[kitOf(o)].lead<90);
   const pr=projs.find(p=>p.o!==f&&Math.sign(f.x-p.x)===Math.sign(p.vx)&&Math.abs(f.x-p.x)<260);
   if((melee||pr)&&f.seen!==o.aid){
@@ -1173,6 +1230,7 @@ function update(f,o,think){
   if(G.phase==='fight')f.en=Math.min(100,f.en+.05);
   fireTick(f,o);
   iceTick(f);
+  if(f.banished>0){f.banished--;f.vx=f.vy=0;if(f.st!=='stun'&&f.st!=='ko')set(f,'stun');if(f.banished===0&&f.st==='stun')idle(f)} // gone into another dimension
   if(f.rooted>0){f.rooted--;f.vx=0}
   if(f.rage>0){if(G.phase==='fight'&&!G.ult)f.rage--;if(G.f%2===0)monoRun(f.ult==='mimic',()=>parts.push({x:f.x+R(-20,20),y:f.y-R(10,130),vx:R(-.4,.4),vy:-R(1,2.5),life:RI(16,28),col:Math.random()<.5?f.col:'#ff8a8a',r:R(1.5,3),fl:1}))}
   if(f.shieldT>0){f.shieldT--;if(f.shieldT<=0&&f.shield>0){f.shield=0;shatter(f)}}
@@ -1241,7 +1299,7 @@ function step(){
   }
   update(a,b,fight);update(b,a,fight);
   const dx=b.x-a.x;
-  if(Math.abs(dx)<34&&a.st!=='ko'&&b.st!=='ko'&&Math.abs(a.y-b.y)<60){const push=(34-Math.abs(dx))/2*(Math.sign(dx)||1);a.x-=push;b.x+=push}
+  if(Math.abs(dx)<34&&a.st!=='ko'&&b.st!=='ko'&&!(a.banished>0)&&!(b.banished>0)&&Math.abs(a.y-b.y)<60){const push=(34-Math.abs(dx))/2*(Math.sign(dx)||1);a.x-=push;b.x+=push}
   projs.forEach(p=>{
     p.x+=p.vx;p.t++;
     if(p.t%2)parts.push({x:p.x,y:p.y+R(-6,6),vx:-p.vx*.1,vy:R(-1,1),life:16,col:p.o.col,r:R(2,4)});
@@ -1368,6 +1426,7 @@ function drawFighter(f){
     ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(hx-s*11,hy-6);ctx.quadraticCurveTo(hx-s*24,hy-9+wv,hx-s*34,hy-2+wv*1.5);ctx.moveTo(hx-s*11,hy-5);ctx.quadraticCurveTo(hx-s*22,hy-2+wv,hx-s*30,hy+6+wv*1.3);ctx.stroke();
     ctx.fillStyle='#1f3d1a';for(const dx of [-8,-2,4,10]){ctx.beginPath();ctx.moveTo(hx+s*dx-2,hy-8);ctx.lineTo(hx+s*dx,hy-13);ctx.lineTo(hx+s*dx+2,hy-8);ctx.fill()}
     ctx.fillStyle=flash?'#fff':f.col;ctx.fillRect(hx-s*12-2,hy-8,4,4)}
+  if(f.acc==='orbit'){ctx.strokeStyle=f.col+'77';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(hx,hy-4,19,6,-.15*s,0,7);ctx.stroke();for(let k=0;k<2;k++){const a=G.f*.06+k*Math.PI;ctx.fillStyle=flash?'#fff':k?'#ffffff':f.col;ctx.beginPath();ctx.arc(hx+Math.cos(a)*19,hy-4+Math.sin(a)*6-Math.cos(a)*2*s,2.4,0,7);ctx.fill()}}
   if(f.acc==='icicle'){[[-9,-6,-2.4,13],[-12,2,-2.0,11],[-4,-12,-2.8,10]].forEach(([dx,dy,a,l])=>{ctx.save();ctx.translate(hx+s*dx,hy+dy);ctx.rotate(a*s);ctx.beginPath();ctx.moveTo(-3,0);ctx.lineTo(0,-l);ctx.lineTo(3,0);ctx.closePath();ctx.fillStyle=flash?'#fff':f.col;ctx.fill();ctx.strokeStyle=rim;ctx.lineWidth=1.5;ctx.stroke();ctx.restore()})}
   if(f.frost>0){const sc=f.frostSrc&&f.frostSrc.ult==='mimic'?'#dddddd':(f.frostSrc||f).col;for(let i=0;i<FROST_MAX;i++){const px=hx+(i-(FROST_MAX-1)/2)*12,py=hy-30;ctx.beginPath();ctx.moveTo(px,py-6);ctx.lineTo(px+4,py);ctx.lineTo(px,py+6);ctx.lineTo(px-4,py);ctx.closePath();
     ctx.fillStyle=i<f.frost?sc:'#0008';ctx.fill();ctx.strokeStyle=i<f.frost?'#fff':sc+'88';ctx.lineWidth=1.2;ctx.stroke()}}
@@ -1486,7 +1545,7 @@ function render(){
   ctx.drawImage(bg,0,0,W,H);
   if(G.dark>.01){ctx.fillStyle=`rgba(0,0,0,${G.dark})`;ctx.fillRect(-W,-H,W*3,H*3)}
   {const m=drawSplit(props,u=>u.draw());if(m.length)monoLayer(()=>m.forEach(u=>u.draw()))}
-  [...F].sort((a,b)=>(a.st==='ko')-(b.st==='ko')).reverse().forEach(f=>monoBuffed(f)?monoLayer(()=>drawFighter(f)):drawFighter(f));
+  [...F].sort((a,b)=>(a.st==='ko')-(b.st==='ko')).reverse().forEach(f=>{if(f.banished>0)return;monoBuffed(f)?monoLayer(()=>drawFighter(f)):drawFighter(f)});
   projs.forEach(p=>{
     ctx.save();ctx.translate(p.x,p.y);ctx.scale(Math.sign(p.vx),1);
     ctx.shadowColor=p.o.col;ctx.shadowBlur=22;ctx.fillStyle=p.o.col;
@@ -1558,6 +1617,7 @@ const ICON={
   tide:'<path d="M2 15c3-4 5-4 7 0s4 4 7 0s4-4 6 0M2 20c3-3 5-3 7 0s4 3 7 0s4-3 6 0M8 10c0-4 4-7 8-6c-3 1-4 3-3 6"/>',
   bloom:'<circle cx="12" cy="8" r="2"/><path d="M12 6c-1-3 1-4 0-4M12 10v12M12 16c-3-1-5 0-6 2M12 18c3-1 5 0 6 2M9 7c-3-1-4 2-2 3c1 1 3 0 5-2M15 7c3-1 4 2 2 3c-1 1-3 0-5-2"/>',
   glacier:'<path d="M12 2v20M3.5 7l17 10M3.5 17l17-10M9 4l3 3l3-3M9 20l3-3l3 3"/>',
+  void:'<path d="M12 3l1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6z"/><path d="M3 21l4-4M17 17l4 4M4 4l3 3"/>',
   mimic:'<path d="M14 3a9 9 0 1 0 7 13a7 7 0 0 1-7-13z"/><path d="M16 8l2 2M18 6l1 1"/>'
 };
 const MANA_TXT=['สกิล 1 · ใช้มานา 1 ช่อง','สกิล 2 · ใช้มานา 2 ช่อง','ท่าไม้ตาย · มานาเต็มและเลือดต่ำกว่า 40% · คูลดาวน์ 40 วิ'];
@@ -1575,6 +1635,7 @@ const SKTXT={
   tide:[['บอลวารี','ยิงลูกน้ำหมุนพุ่งไปข้างหน้า'],['น้ำพุทะลวง','น้ำพุพุ่งขึ้นจากใต้เท้าคู่ต่อสู้ ดีดให้ลอยแล้วซัดซ้ำกลางอากาศ'],['คลื่นยักษ์','คลื่นยักษ์ซัดคู่ต่อสู้ไปทั้งตัว แล้วกระแทกเข้ากับขอบสนาม']],
   bloom:[['บุปผาสูบโลหิต','ดอกไม้งอกบนตัวคู่ต่อสู้ ดูดเลือดทีละน้อยมาเติมให้ตัวเองราว 3 วินาที'],['วิถีบุปผาพิษ','ฟันแล้วดอกไม้งอกเป็นแนวไปข้างหน้า ใครเหยียบจะเชื่องช้าและติดพิษ (ติดพิษ = ช้าลงหนักและตีเบาลง 30%)'],['สวนบุปผาพิษ','ดอกไม้ยักษ์และดอกเล็กๆ งอกเต็มสนาม คู่ต่อสู้เชื่องช้า 4 วินาทีและติดพิษ 4 วินาที']],
   glacier:[['ไอเหมันต์','พ่นไอเย็นเป็นสายไปข้างหน้า โดนแล้วได้รับดาเมจและติดแต้มน้ำแข็ง 1 แต้ม (สะสมครบ 3 แต้ม น้ำแข็งจะแตกระเบิดใส่ตัวศัตรู ดาเมจรุนแรง)'],['ดาบเหมันต์','เคลือบดาบด้วยน้ำแข็ง 7 วินาที ฟันโดนทุกครั้งเพิ่มแต้มน้ำแข็ง 1 แต้ม'],['ธารน้ำแข็ง','ธารน้ำแข็งงอกขึ้นกลืนตัวคู่ต่อสู้ ตัวแข็งขยับไม่ได้ราว 3 วินาที โดนความเย็นกัดเสียเลือดต่อเนื่อง ปิดท้ายด้วยแต้มน้ำแข็งอีก 2 แต้ม']],
+  void:[['ฟันมิติ','ฟันจนอากาศตรงหน้าแตกร้าวเหมือนกระจก ศัตรูที่อยู่ในระยะโดนดาเมจและกระเด็น'],['ประตูมิติ','เปิดประตูมิติใต้เท้าศัตรู ถ้าหลบไม่ทันจะหายไปจากสนามราว 1.5 วินาที ตอนกลับออกมาสุ่ม 1 ใน 2 อย่าง: ฟื้นเลือดให้ตัวเอง หรือศัตรูโดนแรงบีบมิติเสียเลือด'],['ฉีกห้วงมิติ','ฟันมิติอย่างรุนแรงจนฉีกขาดเป็นช่องโหว่ของอวกาศ ศัตรูโดนกระหน่ำจากในรอยแยกหลายครั้งก่อนปิดท้ายด้วยแรงระเบิด']],
   mimic:[['เงาสะท้อน','สุ่มยืมสกิล 1 ของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ'],['เงาสะท้อนคู่','สุ่มยืมสกิล 2 ของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ'],['จันทร์สะท้อนพลัง','สุ่มยืมท่าไม้ตายของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ']]
 };
 const skIcons=r=>`<span class="sks">${[0,1,2].map(k=>`<span class="sk${k===2?' u':''}" role="button" tabindex="0" data-sk="${r.ult}:${k}" style="--c:${r.col}" aria-label="${SKTXT[r.ult][k][0]}"><i><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[r.ult]}</svg></i>${k===2?'ไม้ตาย':'สกิล '+(k+1)}</span>`).join('')}</span>`;
