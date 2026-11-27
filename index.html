@@ -176,7 +176,7 @@ const ROSTER=[
   {name:'โลหิตราชันย์',ult:'roar',stance:'oni',alt:['#e8e8f0','#5a5a6a'],col:'#e0142e',dark:'#5c0612',acc:'horns',style:'สายคลั่งโลหิต',desc:'คมดาบคริแน่นอน เกราะโลหิต คำรามคลั่ง',agg:.8,pb:0.29,agi:0.13,jumpy:.08,spd:2.6,pow:1.07},
   {name:'จันทราสะท้อน',ult:'mimic',stance:'seigan',alt:['#ffd6f0','#7a4a6a'],col:'#eef0ff',dark:'#5f6280',acc:'mask',style:'สายเงาสะท้อน',desc:'ทุกท่าสุ่มยืมมาจากนักดาบคนอื่น',agg:.66,pb:0.32,agi:.18,jumpy:.12,spd:2.7,pow:1.02},
   {name:'นทีสมุทร',ult:'tide',stance:'nagare',alt:['#7fffd4','#1f6f5f'],col:'#3d6cff',dark:'#122a7a',acc:'topknot',style:'สายวารี',desc:'บอลน้ำ น้ำพุพุ่ง คลื่นยักษ์ซัด',agg:0.67,pb:0.33,agi:.18,jumpy:.12,spd:2.7,pow:1.06},
-  {name:'มาลีอาบพิษ',ult:'bloom',stance:'hana',alt:['#ffd84a','#8a6a12'],col:'#e255e0',dark:'#7a1f78',acc:'flower',style:'สายบุปผาพิษ',desc:'ดอกไม้ดูดเลือด ทางดอกไม้พิษทำให้เชื่องช้า',agg:.62,pb:.3,agi:.18,jumpy:.12,spd:2.7,pow:1.04}
+  {name:'บุปผามัจจุราช',ult:'bloom',stance:'hana',alt:['#ffd84a','#8a6a12'],col:'#e255e0',dark:'#7a1f78',acc:'thorn',style:'สายบุปผาพิษ',desc:'ดอกไม้ดูดเลือด ทางดอกไม้พิษทำให้เชื่องช้า',agg:.62,pb:.3,agi:.18,jumpy:.12,spd:2.7,pow:1.04}
 ];
 let fxsDummy=0,F=[],projs=[],parts=[],pops=[],G={f:0},logItems=[],picks=[0,1],slot=0,selecting=true;
 function mk(i,r){const o=Object.assign({id:i,wins:0,ultCd:0},ROSTER[r]);if(i===1&&picks[0]===picks[1]){o.col=o.alt[0];o.dark=o.alt[1];o.name+=' II'}return o}
@@ -751,7 +751,7 @@ const ULT={
     if(e===82)cut(f,o,0,6,1);
     return e>=115;
   },
-  bloom(f,o,e){ // มาลีอาบพิษ: a giant flower and a field of small ones; the foe is left slowed and poisoned
+  bloom(f,o,e){ // บุปผามัจจุราช: a giant flower and a field of small ones; the foe is left slowed and poisoned
     if(e===0){set(f,'ult');f.upose=RAISE;f.uk=.3}
     if(e===8){props.push(garden(f,clampX(o.x)));sfx('bloom');sfx('rustle');G.shake=8;erupt(clampX(o.x),f)}
     if(e>=24&&e<84&&e%12===0)ultHit(f,o,3,0,o.x+R(-20,20),o.y-90+R(-30,30));
@@ -891,7 +891,7 @@ const SKILL={
     return t>=48}}
 };
 
-/* ---------- flowers (มาลีอาบพิษ): life-draining blooms, poison and slowness ---------- */
+/* ---------- flowers (บุปผามัจจุราช): life-draining blooms, poison and slowness ---------- */
 const POISON='#a6e34a';
 function drawFlower(x,y,r,n,rot,col,mid){if(r<=.5)return;ctx.save();ctx.translate(x,y);ctx.rotate(rot);
   for(let i=0;i<n;i++){ctx.save();ctx.rotate(i/n*Math.PI*2);ctx.beginPath();ctx.ellipse(r*.55,0,r*.62,r*.34,0,0,7);ctx.fillStyle=col;ctx.fill();ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=1;ctx.stroke();ctx.restore()}
@@ -1259,7 +1259,10 @@ function drawFighter(f){
   if(f.acc==='spike')shape([[hx+s*10,hy-7],[hx+s*3,hy-27],[hx-s*2,hy-12],[hx-s*12,hy-25],[hx-s*10,hy-8],[hx-s*25,hy-14],[hx-s*12,hy+1]],body);
   if(f.acc==='hat'){shape([[hx-34,hy-5],[hx,hy-27],[hx+34,hy-5]],'#1a1512')}
   if(f.acc==='hood')shape([[hx-s*14,hy+8],[hx-s*15,hy-6],[hx-s*4,hy-16],[hx+s*9,hy-12],[hx-s*2,hy-10],[hx-s*6,hy+2]],'#1a1515');
-  if(f.acc==='flower'){ctx.save();ctx.translate(hx-s*10,hy-10);for(let i=0;i<5;i++){ctx.rotate(Math.PI*2/5);ctx.beginPath();ctx.ellipse(4.5,0,4.5,2.6,0,0,7);ctx.fillStyle=flash?'#fff':f.col;ctx.fill()}ctx.beginPath();ctx.arc(0,0,2.2,0,7);ctx.fillStyle='#ffe066';ctx.fill();ctx.restore()}
+  if(f.acc==='thorn'){ctx.lineCap='round';ctx.strokeStyle='#1f3d1a';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(hx-12,hy-6);ctx.lineTo(hx+12,hy-6);ctx.stroke(); // a thorn-vine headband, tied at the back
+    ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(hx-s*11,hy-6);ctx.quadraticCurveTo(hx-s*24,hy-9+wv,hx-s*34,hy-2+wv*1.5);ctx.moveTo(hx-s*11,hy-5);ctx.quadraticCurveTo(hx-s*22,hy-2+wv,hx-s*30,hy+6+wv*1.3);ctx.stroke();
+    ctx.fillStyle='#1f3d1a';for(const dx of [-8,-2,4,10]){ctx.beginPath();ctx.moveTo(hx+s*dx-2,hy-8);ctx.lineTo(hx+s*dx,hy-13);ctx.lineTo(hx+s*dx+2,hy-8);ctx.fill()}
+    ctx.fillStyle=flash?'#fff':f.col;ctx.fillRect(hx-s*12-2,hy-8,4,4)}
   if(f.shield>0){const sa=Math.min(1,f.shieldT/30);ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=sa*(.55+.2*Math.sin(G.f*.25));ctx.strokeStyle=f.col;ctx.lineWidth=3;ctx.shadowColor=f.col;ctx.shadowBlur=18;
     ctx.beginPath();for(let k=0;k<=6;k++){const a=k/6*Math.PI*2+Math.PI/6,px=hip[0]+Math.cos(a)*52,py=hip[1]-36+Math.sin(a)*92;k?ctx.lineTo(px,py):ctx.moveTo(px,py)}ctx.stroke();
     ctx.globalAlpha=sa*.12;ctx.fillStyle=f.col;ctx.fill();ctx.restore()}
