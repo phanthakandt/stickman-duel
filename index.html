@@ -662,9 +662,9 @@ const ULT={
           if(!caught&&!this.done&&(front-o.x)*dir>-30&&o.st!=='ko'){caught=true;o.fl=4}
           if(caught&&o.st!=='ko'){o.x=Math.max(40,Math.min(W-40,front+dir*12));o.vx=0;o.y=Math.min(o.y,GY);
             if(this.t%10===0&&(this.n=(this.n||0)+1)<=6)ultHit(f,o,4,0,o.x,o.y-90);
-            if((this.n||0)>=6||dist>900){caught=false;this.done=true;fxs.push({ty:'ring',x:o.x,y:GY,col:f.col,t:0,life:40,big:1});drops(o.x,o.y-80,60,f,10);sfx('splash');ultHit(f,o,16,1)}}
+            this.ct=(this.ct||0)+1;if((this.n||0)>=6||this.ct>80){caught=false;this.done=true;fxs.push({ty:'ring',x:o.x,y:GY,col:f.col,t:0,life:40,big:1});drops(o.x,o.y-80,60,f,10);sfx('splash');ultHit(f,o,16,1)}}
           for(let i=0;i<4;i++)parts.push({x:front+R(-20,10)*dir,y:GY-R(100,260),vx:dir*R(2,6),vy:-R(0,3),life:RI(14,26),col:Math.random()<.5?'#e8f6ff':f.col,r:R(2,4)});
-          if(front<-260||front>W+260)this.dead=1},
+          if((front<-260||front>W+260)&&(!caught||this.done))this.dead=1},
         draw(){const H2=280,back=front-dir*680,L=front-back;fadeLayer(()=>{
           const ridge=u=>GY-H2*(.04+.96*Math.pow(u,1.7))+Math.sin(G.f*.22+u*9)*8*(1-u)*Math.min(1,u*4); // long low tail rising to the crest
           ctx.save();ctx.globalAlpha=.9;
