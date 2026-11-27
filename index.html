@@ -392,7 +392,16 @@ const SFX={
     lf.frequency.value=23;lg.gain.value=9;lf.connect(lg);lg.connect(o.frequency);lp.type='lowpass';lp.frequency.setValueAtTime(900,t);lp.frequency.exponentialRampToValueAtTime(300,t+1.3);env(g,t,.06,.7,1.3);o.connect(lp);lp.connect(g);g.connect(SFXG);g.connect(REV);o.start(t);lf.start(t);o.stop(t+1.5);lf.stop(t+1.5);
     nz(t,{type:'bandpass',f:[[0,500],[1.2,250]],q:1.2,a:.06,d:1.2,peak:.6,rev:1});thump(t,55,1,.8)},
   shatter(){const t=AC.currentTime;for(let k=0;k<6;k++)nz(t+k*.025,{type:'bandpass',f:[[0,R(2500,6000)]],q:4,d:.12,peak:.4});nz(t,{type:'lowpass',f:[[0,1500],[.3,200]],d:.3,peak:.4})},
-  glass(){const t=AC.currentTime;for(let k=0;k<8;k++)nz(t+k*.018,{type:'bandpass',f:[[0,R(3500,8000)]],q:6,d:.09,peak:.32});steel(t,R(900,1100),.9,.1,1,1)},
+  glass(big){ // "เพล้ง": a bright crash, a burst of crackle, then shards tinkling down
+    const t=AC.currentTime,k=big?1.3:1;
+    nz(t,{type:'highpass',f:[[0,2200],[.2,4000]],q:.5,a:.001,d:.22*k,peak:.95});
+    nz(t,{type:'bandpass',f:[[0,4800]],q:.7,a:.001,d:.14*k,peak:.7});
+    nz(t,{type:'lowpass',f:[[0,1200],[.08,300]],q:.7,a:.001,d:.08,peak:.45});
+    for(let i=0;i<34;i++)nz(t+Math.pow(Math.random(),1.6)*.12,{type:'bandpass',f:[[0,R(3000,10000)]],q:9,a:.001,d:R(.008,.03),peak:R(.25,.6)});
+    for(let i=0;i<Math.round(46*k);i++){const dt=.015+Math.pow(Math.random(),2.2)*.75*k,fr=R(2600,8200);
+      tone(t+dt,'sine',fr,fr*R(.996,1.004),R(.03,.11),R(.035,.1)*(1-dt/(.8*k)),SFXG,1,.0008)}
+  },
+  crack(){const t=AC.currentTime;for(let i=0;i<10;i++)nz(t+i*R(.006,.016),{type:'bandpass',f:[[0,R(2500,7000)]],q:7,a:.001,d:R(.01,.025),peak:R(.3,.6)});nz(t,{type:'highpass',f:[[0,3000]],a:.001,d:.05,peak:.35})},
   warp(){const t=AC.currentTime;tone(t,'sine',900,90,.5,.18,SFXG,1,.02);tone(t,'triangle',1400,140,.45,.08,SFXG,1,.02);nz(t,{f:[[0,3000],[.5,300]],q:2,a:.05,d:.45,peak:.2,rev:1})},
   frost(){const t=AC.currentTime;nz(t,{type:'highpass',f:[[0,6000],[.3,3500]],q:.7,a:.03,d:.3,peak:.22});nz(t,{f:[[0,1800],[.3,900]],q:1,a:.03,d:.25,peak:.12})},
   freeze(){const t=AC.currentTime;for(let k=0;k<7;k++)nz(t+k*.03,{type:'bandpass',f:[[0,R(3000,7000)]],q:5,d:.08,peak:.35});steel(t+.05,620,1.2,.12,1,.8);thump(t,70,.4,.5)},
@@ -782,7 +791,7 @@ const ULT={
   },
   void(f,o,e){ // อนันตดารา: one savage cut tears space open; the foe is battered by the void inside
     if(e===0){set(f,'ult');f.upose=ATK.men.A;f.uk=.5}
-    if(e===12){f.upose=ATK.men.B;f.uk=1;sfx('glass');sfx('boom');G.white=.6;G.shake=18;ufx.push(rift(f,o));ufx.push(crack(f,o.x,o.y-100,1.8))}
+    if(e===12){f.upose=ATK.men.B;f.uk=1;sfx('glass',1);sfx('boom');G.white=.6;G.shake=18;ufx.push(rift(f,o));ufx.push(crack(f,o.x,o.y-100,1.8))}
     if(e>=30&&e<90&&e%10===0){ultHit(f,o,5,0,o.x+R(-20,20),o.y-90+R(-40,40));if(e%20===0)ufx.push(crack(f,o.x+R(-60,60),o.y-100+R(-50,50),.7))}
     if(e===100)ultHit(f,o,16,1);
     if(e===104){f.upose=ST.sora;f.uk=.3}
@@ -925,7 +934,7 @@ const SKILL={
   void:{name:'ฟันมิติ',lead:12,want:d=>d<240?.4:.05,run(f,o,t){ // a cut that cracks the air itself like glass
     if(t===1){f.upose=ATK.kesa.A;f.uk=.5}
     if(t===10){f.upose=ATK.kesa.B;f.uk=1;arcFx(f,ATK.kesa);const inR=(o.x-f.x)*f.s>-10&&Math.abs(o.x-f.x)<240&&o.y>GY-140;
-      ufx.push(crack(f,inR?o.x:f.x+f.s*150,f.y-100,1));sfx('glass');if(inR)skillHit(f,o,12,o.x,o.y-100,5,f.x)}
+      ufx.push(crack(f,inR?o.x:f.x+f.s*150,f.y-100,1));sfx('crack');if(inR)skillHit(f,o,12,o.x,o.y-100,5,f.x)}
     return t>=30}},
   glacier:{name:'ไอเหมันต์',lead:12,want:d=>d<220?.45:.05,run(f,o,t){ // a breath of freezing mist; a hit adds one frost stack
     if(t===1){f.upose=[.3,8,28,-1.1,.75,.22,-.55,-.75];f.uk=.4}
