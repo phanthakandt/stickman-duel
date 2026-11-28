@@ -31,6 +31,7 @@ body:not(.picking) .bar{max-width:max(560px,calc((100dvh - 96px)*16/9));margin-i
 .stage{position:relative}
 #ready{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;background:radial-gradient(ellipse at 50% 55%,#0007,#0000 60%);pointer-events:none}
 #ready[hidden]{display:none}
+#ready p:empty{display:none}
 #ready p{margin:0;font-weight:600;color:#fff;text-shadow:0 2px 0 #120a07,0 0 12px #000}
 #go{pointer-events:auto;min-height:58px;padding:0 44px;font:700 clamp(20px,3vw,28px) Kanit,sans-serif;background:var(--gold);color:#1a120c;border:3px solid #120a07;border-radius:14px;box-shadow:0 6px 0 #8a5a12,0 12px 30px #000a;animation:bob 1.4s ease-in-out infinite}
 #go:active{transform:translateY(4px);box-shadow:0 2px 0 #8a5a12}
@@ -1301,7 +1302,7 @@ function newMatch(){
   F=[mk(0,picks[0]),mk(1,picks[1])];G={f:G.f||0,round:1,phase:'ready',pt:0,timer:3600,hitstop:0,shake:0,slowT:0,msg:null,bet:null,locked:false,gt:!!GT};
   parts=[];pops=[];startRound();G.phase='ready';G.msg=null;renderCards();betLine();
   if(GT){addLog(`— ด่าน ${GT.idx+1}/${GT.queue.length}: <b style="color:${F[0].col}">${F[0].name}</b> ปะทะ <b style="color:${F[1].col}">${F[1].name}</b> —`);
-    setReady(`ตัวเอก ${F[0].name} · ต้องล้มคู่ต่อสู้ ${GT.queue.length} ตัว ยกเดียวรู้ผล`,'เริ่มไล่ล้ม!',false)}
+    setReady(GT.idx?`ด่าน ${GT.idx+1}/${GT.queue.length} · ${F[0].name} ปะทะ ${F[1].name}`:`ตัวเอก ${F[0].name} · ต้องล้มคู่ต่อสู้ ${GT.queue.length} ตัว ยกเดียวรู้ผล`,GT.idx?'เริ่มสู้!':'เริ่มไล่ล้ม!',false)}
   else{addLog(`— แมตช์ใหม่: <b style="color:${F[0].col}">${F[0].name}</b> ปะทะ <b style="color:${F[1].col}">${F[1].name}</b> —`);setReady('ทายผู้ชนะด้านล่างก่อนได้เลย','เริ่มสู้!',false)}
 }
 /* ---------- gauntlet: one hero against every other sword in random order, one round each, until they fall ---------- */
@@ -1315,20 +1316,20 @@ function gtResult(w){
   const n=GT.queue.length,h=F[0],o=F[1];G.pt=0;
   if(w===h){GT.idx++;
     if(GT.idx>=n){G.phase='gtend';GT.clear=true;const rec=gtSave(GT.idx,true);sfx('gong');
-      msg('เคลียร์!',99999,`${h.name} ล้มครบทั้ง ${n} ตัว`);
+      G.msg=null;G.win={f:h,title:'เคลียร์!',sub:`ล้มครบทั้ง ${n} ตัว · เคลียร์มาแล้ว ${rec.clears} ครั้ง`};
       addLog(`🏆 <b style="color:${h.col}">${h.name}</b> เคลียร์โหมดไล่ล้ม! (เคลียร์มาแล้ว ${rec.clears} ครั้ง)`);
-      setReady(`เคลียร์มาแล้ว ${rec.clears} ครั้งด้วย ${h.name}`,'เล่นอีกรอบ',true)}
-    else{G.phase='gtnext';msg('ชนะ!',99999,'');
+      setReady('','เล่นอีกรอบ',true)}
+    else{G.phase='gtnext';G.msg=null;sfx('gong');G.win={f:h,title:`ผ่านด่าน ${GT.idx}/${n}`,sub:`ด่านต่อไป: ${ROSTER[GT.queue[GT.idx]].name}`};setReady('','สู้ต่อ',true);
       addLog(`ด่าน ${GT.idx}/${n} — <b style="color:${h.col}">${h.name}</b> ล้ม <b style="color:${o.col}">${o.name}</b> ได้`)}
   }else{G.phase='gtend';const rec=gtSave(GT.idx,false);
-    msg('พ่ายแพ้',99999,`ล้มได้ ${GT.idx} จาก ${n} ตัว`);
+    G.msg=null;sfx('gong');G.win={f:o,title:'ผู้ชนะ',sub:`${h.name} ล้มได้ ${GT.idx} จาก ${n} ตัว · สถิติดีสุด ${rec.best}`};
     addLog(`<b style="color:${h.col}">${h.name}</b> แพ้ให้ <b style="color:${o.col}">${o.name}</b> ที่ด่าน ${GT.idx+1} · ล้มได้ ${GT.idx} ตัว (สถิติดีสุด ${rec.best})`);
-    setReady(`สถิติดีสุดของ ${h.name}: ล้มได้ ${rec.best} จาก ${n} ตัว`,'ลองใหม่',true)}
+    setReady('','ลองใหม่',true)}
 }
 function endRound(){
   if(F.some(f=>f.wins>=need())){
     const w=F.find(f=>f.wins>=need());if(G.gt){gtResult(w);return}
-    G.phase='over';G.pt=0;msg(w.name+' ชนะ!',99999,`รีแมตช์ใน 8 วินาที`);
+    G.phase='over';G.pt=0;G.msg=null;sfx('gong');G.win={f:w,title:'ผู้ชนะ',sub:`ชนะ ${w.wins} ต่อ ${F.find(f=>f!==w).wins} ยก`};setReady('','สู้ต่อ',true);
     addLog(`<b style="color:${w.col}">${w.name}</b> ชนะแมตช์ ${w.wins}–${F.find(f=>f!==w).wins}`+(G.bet!==null?(F[G.bet]===w?' · คุณทายถูก!':' · คุณทายผิด'):''));
     betLine(w);
   }else{G.round++;startRound()}
@@ -1377,14 +1378,10 @@ function step(){
   }
   if(G.phase==='gtnext'){
     if(G.pt===2&&F[0].st!=='ko')set(F[0],'win');
-    if(G.msg)G.msg.sub=`ด่านต่อไป: ${ROSTER[GT.queue[GT.idx]].name} ใน ${Math.max(0,Math.ceil((300-G.pt)/60))} วินาที`;
-    if(G.pt>=300){picks=[GT.hero,GT.queue[GT.idx]];newMatch();G.phase='intro';G.pt=0;G.locked=true}
   }
   if(G.phase==='gtend'&&G.pt===2){const w=GT.clear?F[0]:F[1];if(w.st!=='ko')set(w,'win')}
   if(G.phase==='over'){
     if(G.pt===2){const w=F.find(f=>f.wins>=2);if(w.st!=='ko')set(w,'win')}
-    if(G.msg)G.msg.sub=`รีแมตช์ใน ${Math.max(0,Math.ceil((480-G.pt)/60))} วินาที`;
-    if(G.pt>=480)newMatch();
   }
 }
 
@@ -1582,6 +1579,27 @@ function ultTitle(){
   if(f.ult==='mimic'){ctx.shadowBlur=0;ctx.globalAlpha=a*.85;ctx.font='600 18px Kanit, sans-serif';ctx.fillStyle='#d8dcff';ctx.fillText('ยืมพลังของ '+nameOfKit(f.borrow),cx+sl,H/2+76)}
   ctx.restore();
 }
+/* ---------- winner banner: the winner's name and sword, centre screen, until the player presses on ---------- */
+function drawKatana(x,y,len,ang,col,dark,k){ // a big katana: wrapped grip, oval guard, glowing curved blade (k = 0..1 reveal)
+  ctx.save();ctx.translate(x,y);ctx.rotate(ang);const gl=len*.24,bl=(len-gl)*k;ctx.lineCap='round';
+  ctx.strokeStyle='#000';ctx.lineWidth=16;ctx.beginPath();ctx.moveTo(-gl,0);ctx.lineTo(0,0);ctx.stroke();
+  ctx.strokeStyle=dark;ctx.lineWidth=5;ctx.setLineDash([9,7]);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(4,0,7,22,0,0,7);ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.stroke();
+  if(bl>2){ctx.shadowColor=col;ctx.shadowBlur=40;ctx.strokeStyle=col;ctx.lineWidth=15;ctx.beginPath();ctx.moveTo(12,0);ctx.quadraticCurveTo(12+bl*.55,-bl*.025,12+bl,-bl*.06);ctx.stroke();
+    ctx.shadowBlur=0;ctx.strokeStyle='#fff';ctx.lineWidth=5;ctx.stroke()}
+  ctx.restore()}
+function drawWin(){
+  const w=G.win;if(!w)return;const t=G.pt,a=Math.min(1,t/24),k=ease(Math.max(0,(t-6)/30));
+  ctx.save();ctx.fillStyle=`rgba(8,4,2,${.62*a})`;ctx.fillRect(0,0,W,H);
+  const g=ctx.createRadialGradient(W/2,H/2,10,W/2,H/2,360);g.addColorStop(0,w.f.col+'44');g.addColorStop(1,w.f.col+'00');ctx.globalAlpha=a;ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  drawKatana(W/2-146,H/2+66,560,0,w.f.col,w.f.dark,k);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font='600 26px Kanit, sans-serif';ctx.fillStyle='#ffc94a';ctx.fillText(w.title,W/2,H/2-112);
+  const nm=w.f.name,sz=nm.length>12?60:72;ctx.font=`700 ${sz}px Kanit, sans-serif`;ctx.lineWidth=10;ctx.strokeStyle='#120a07';ctx.strokeText(nm,W/2,H/2-48);
+  ctx.shadowColor=w.f.col;ctx.shadowBlur=30;ctx.fillStyle=w.f.col;ctx.fillText(nm,W/2,H/2-48);ctx.shadowBlur=0;
+  ctx.font='600 20px Kanit, sans-serif';ctx.fillStyle='#b9a796';ctx.fillText(w.f.style,W/2,H/2+8);
+  if(w.sub){ctx.font='600 22px Kanit, sans-serif';ctx.fillStyle='#f6eadb';ctx.fillText(w.sub,W/2,H/2+118)}
+  ctx.restore()}
 function drawMsg(){
   const m=G.msg;if(!m||m.t>m.dur)return;
   const a=Math.min(1,m.t/6),sc=calm?1:1+Math.max(0,(8-m.t)/8)*.6;
@@ -1630,6 +1648,7 @@ function render(){
   if(G.dark>.01){const b=58*G.dark;ctx.fillStyle='#000';ctx.fillRect(0,0,W,b);ctx.fillRect(0,H-b,W,b)}
   if(G.white>.02){ctx.fillStyle=`rgba(255,255,255,${G.white})`;ctx.fillRect(0,0,W,H);G.white*=.88}
   if(G.ult)ultTitle();else{ctx.globalAlpha=1-Math.min(1,G.dark*1.5);hud();ctx.globalAlpha=1}
+  if(['over','gtnext','gtend'].includes(G.phase))drawWin();
   drawMsg();
   if(paused){ctx.fillStyle='#0008';ctx.fillRect(0,0,W,H);ctx.font='700 40px Kanit, sans-serif';ctx.fillStyle='#f6eadb';ctx.textAlign='center';ctx.fillText('หยุดชั่วคราว',W/2,H/2)}
 }
@@ -1812,10 +1831,13 @@ function showClip(blob,type){
   try{clipEl.scrollIntoView({block:'nearest',behavior:'smooth'})}catch(e){}
 }
 const readyEl=document.getElementById('ready');
-document.getElementById('go').addEventListener('click',()=>{if(G.phase==='gtend'&&GT){gtStart(GT.hero);return}if(G.phase!=='ready')return;G.phase='intro';G.pt=0;G.locked=true;renderCards();betLine();if(paused)togglePause()});
+document.getElementById('go').addEventListener('click',()=>{if(G.phase==='gtend'&&GT){gtStart(GT.hero);return}
+  if(G.phase==='over'){newMatch();return} // สู้ต่อ: set up the next match, then wait for เริ่มสู้
+  if(G.phase==='gtnext'&&GT){picks=[GT.hero,GT.queue[GT.idx]];newMatch();return}
+  if(G.phase!=='ready')return;G.phase='intro';G.pt=0;G.locked=true;renderCards();betLine();if(paused)togglePause()});
 function loop(now){
   const dt=Math.min(64,now-last);last=now;
-  readyEl.hidden=selecting||!(G.phase==='ready'||G.phase==='gtend');
+  readyEl.hidden=selecting||!['ready','gtend','over','gtnext'].includes(G.phase);
   if(selecting){G.f++;drawPortraits();requestAnimationFrame(loop);return}
   if(!paused){acc+=dt*speed*(G.slowT>0?.3:1);let n=0;while(acc>=FPS&&n<10){step();acc-=FPS;n++}if(n>=10)acc=0}
   render();requestAnimationFrame(loop);
