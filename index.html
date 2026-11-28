@@ -634,7 +634,7 @@ function vines(f,o,x){ // grass and vines that sprout around the foe and bind th
       if(this.t===14){sfx('rustle');if(Math.abs(o.x-x)<62&&o.y>GY-40&&o.st!=='ko'){const r=skillHit(f,o,6,o.x,o.y-50,0,null);if(r==='hit'){o.hd=100;o.rooted=100;f.cd=0;o.vx=0;this.bound=96;pop(o.x,o.y-160,'โดนพันธนาการ!',f.col,1)}}}
       if(this.bound>0){this.bound--;if(this.t%15===0&&o.st!=='ko'&&!G.ult){hurtHp(o,2);pop(o.x+R(-10,10),o.y-120,'2',f.col);if(o.hp<=0)ko(f,o)}}
       if(this.t>=this.life)this.dead=1},
-    draw(){const g=Math.min(1,(this.t-6)/10);if(g<=0)return;const a=Math.min(1,(this.life-this.t)/40),cx=this.bound>0?o.x:x;
+    draw(){const g=Math.min(1,(this.t-6)/10);if(g<=0||(this.bound>0&&(o.vanish>0||o.banished>0)))return;const a=Math.min(1,(this.life-this.t)/40),cx=this.bound>0?o.x:x;
       ctx.save();ctx.globalAlpha=a;ctx.lineCap='round';
       strands.forEach(s=>{const hh=s.h*g*(this.bound>0?1.15:.8),wv=Math.sin(G.f*.08+s.ph)*6;ctx.beginPath();ctx.moveTo(cx+s.dx,GY);
         ctx.bezierCurveTo(cx+s.dx+wv,GY-hh*.4,cx+s.dx*(this.bound>0?.25:1)-wv,GY-hh*.75,cx+s.dx*(this.bound>0?.15:1)+wv*.5,GY-hh);
@@ -971,7 +971,7 @@ const SKILL={
   bloom:{name:'บุปผาสูบโลหิต',lead:14,want:d=>d<320?.35:.12,run(f,o,t){ // a flower takes root on the foe and drains their life into the caster
     if(t===1){f.upose=[.1,20,-10,2.4,.5,.1,-.4,-.6];f.uk=.45}
     if(t===12){f.upose=[.3,36,4,1.57,...LL];f.uk=.9;sfx('bloom');for(let i=0;i<10;i++)parts.push({x:o.x+R(-20,20),y:o.y-R(90,140),vx:R(-1,1),vy:-R(.5,1.5),life:RI(16,26),col:f.col,r:R(2,3),fl:1});
-      if(skillHit(f,o,5,o.x,o.y-110,2,null)==='hit')ufx.push(leech(f,o))}
+      if(skillHit(f,o,5,o.x,o.y-110,2,null)==='hit'&&!o.clone)ufx.push(leech(f,o))}
     return t>=28}},
   petal:{name:'กลีบราตรี',lead:22,want:d=>d>80?.3:.1,run(f,o,t){ // a brief whirl of night petals around the foe
     if(t===1){f.upose=RAISE;f.uk=.35}
@@ -995,12 +995,12 @@ function afflict(f,o,slow,poison){if(o.st==='ko')return;const ns=!(o.slow>0),np=
   if(ns&&slow)pop(o.x,o.y-178,'เชื่องช้า!','#e9b8ff',1);if(np&&poison)pop(o.x,o.y-150,'ติดพิษ! อ่อนแรง',POISON,1)}
 function leech(f,o){let acc=0;return{t:0,life:190,upd(){this.t++;
     if((o.st==='ko'||f.st==='ko')&&this.t<this.life-20)this.t=this.life-20;
-    if(this.t%30===0&&this.t<this.life-20&&!G.ult&&G.phase==='fight'){hurtHp(o,2);healHp(f,1);f.gh=Math.max(f.gh,f.hp);acc+=1;o.fl=2;
+    if(this.t%30===0&&this.t<this.life-20&&!(o.vanish>0||o.banished>0)&&!G.ult&&G.phase==='fight'){hurtHp(o,2);healHp(f,1);f.gh=Math.max(f.gh,f.hp);acc+=1;o.fl=2;
       for(let i=0;i<6;i++)parts.push({x:o.x+R(-8,8),y:o.y-124,vx:(f.x-o.x)/28+R(-1,1),vy:R(-3,-1),life:28,col:Math.random()<.5?f.col:'#ff4d6d',r:R(2,3.5),fl:1});
       if(acc>=3){pop(f.x,f.y-150,'+'+acc,'#7dffa0');sfx('heal');acc=0}
       if(o.hp<=0)ko(f,o)}
     if(this.t>=this.life)this.dead=1},
-  draw(){const g=Math.min(1,this.t/16),a=Math.min(1,(this.life-this.t)/20),x=o.x-o.s*6,y=o.y-130;
+  draw(){if(o.vanish>0||o.banished>0||o.gone)return;const g=Math.min(1,this.t/16),a=Math.min(1,(this.life-this.t)/20),x=o.x-o.s*6,y=o.y-130;
     ctx.save();ctx.globalAlpha=a;ctx.lineCap='round';ctx.strokeStyle='#2f7d32';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(o.x,o.y-96);ctx.quadraticCurveTo(o.x-o.s*18,o.y-112,x,y);ctx.stroke();
     ctx.fillStyle='#3e9a3a';ctx.beginPath();ctx.ellipse(o.x-o.s*12,o.y-108,6*g,2.6*g,.6,0,7);ctx.fill();
     ctx.shadowColor=f.col;ctx.shadowBlur=12;drawFlower(x,y,15*g,6,G.f*.02,f.col,'#ffe066');ctx.restore()}}}
@@ -1282,6 +1282,7 @@ function update(f,o,think){
   if(f.y>=GY&&['idle','walk','block'].includes(f.st))f.s=o.x>f.x?1:-1;
   if(f.gh>f.hp)f.gh=Math.max(f.hp,f.gh-.5);
   if(G.phase==='fight')f.en=Math.min(100,f.en+.05);
+  const pl=parts.length;
   fireTick(f,o);
   iceTick(f);
   if(f.banished>0){f.banished--;f.vx=f.vy=0;if(f.st!=='stun'&&f.st!=='ko')set(f,'stun');if(f.banished===0&&f.st==='stun')idle(f)} // gone into another dimension
@@ -1290,6 +1291,7 @@ function update(f,o,think){
   if(f.rage>0){if(G.phase==='fight'&&!G.ult)f.rage--;if(G.f%2===0)monoRun(f.ult==='mimic',()=>parts.push({x:f.x+R(-20,20),y:f.y-R(10,130),vx:R(-.4,.4),vy:-R(1,2.5),life:RI(16,28),col:Math.random()<.5?f.col:'#ff8a8a',r:R(1.5,3),fl:1}))}
   if(f.shieldT>0){f.shieldT--;if(f.shieldT<=0&&f.shield>0){f.shield=0;shatter(f)}}
   if(f.critNext&&G.f%3===0&&f.gripW&&f.tipW){const u=Math.random();parts.push({x:f.gripW[0]+(f.tipW[0]-f.gripW[0])*u,y:f.gripW[1]+(f.tipW[1]-f.gripW[1])*u,vx:0,vy:R(.5,1.5),life:20,col:f.col,r:R(1.5,2.5)})}
+  if((f.vanish>0||f.banished>0)&&parts.length>pl)parts.length=pl;
   if(f.ultCd>0&&G.phase==='fight'&&!G.ult)f.ultCd--;
 }
 
@@ -1312,13 +1314,13 @@ function gtStart(hero){GT={hero,queue:shuffle(ROSTER.map((_,i)=>i).filter(i=>i!=
 function gtResult(w){
   const n=GT.queue.length,h=F[0],o=F[1];G.pt=0;
   if(w===h){GT.idx++;
-    if(GT.idx>=n){G.phase='gtend';recOnResult();GT.clear=true;const rec=gtSave(GT.idx,true);sfx('gong');
+    if(GT.idx>=n){G.phase='gtend';GT.clear=true;const rec=gtSave(GT.idx,true);sfx('gong');
       msg('เคลียร์!',99999,`${h.name} ล้มครบทั้ง ${n} ตัว`);
       addLog(`🏆 <b style="color:${h.col}">${h.name}</b> เคลียร์โหมดไล่ล้ม! (เคลียร์มาแล้ว ${rec.clears} ครั้ง)`);
       setReady(`เคลียร์มาแล้ว ${rec.clears} ครั้งด้วย ${h.name}`,'เล่นอีกรอบ',true)}
     else{G.phase='gtnext';msg('ชนะ!',99999,'');
       addLog(`ด่าน ${GT.idx}/${n} — <b style="color:${h.col}">${h.name}</b> ล้ม <b style="color:${o.col}">${o.name}</b> ได้`)}
-  }else{G.phase='gtend';recOnResult();const rec=gtSave(GT.idx,false);
+  }else{G.phase='gtend';const rec=gtSave(GT.idx,false);
     msg('พ่ายแพ้',99999,`ล้มได้ ${GT.idx} จาก ${n} ตัว`);
     addLog(`<b style="color:${h.col}">${h.name}</b> แพ้ให้ <b style="color:${o.col}">${o.name}</b> ที่ด่าน ${GT.idx+1} · ล้มได้ ${GT.idx} ตัว (สถิติดีสุด ${rec.best})`);
     setReady(`สถิติดีสุดของ ${h.name}: ล้มได้ ${rec.best} จาก ${n} ตัว`,'ลองใหม่',true)}
@@ -1326,7 +1328,7 @@ function gtResult(w){
 function endRound(){
   if(F.some(f=>f.wins>=need())){
     const w=F.find(f=>f.wins>=need());if(G.gt){gtResult(w);return}
-    G.phase='over';recOnResult();G.pt=0;msg(w.name+' ชนะ!',99999,`รีแมตช์ใน 8 วินาที`);
+    G.phase='over';G.pt=0;msg(w.name+' ชนะ!',99999,`รีแมตช์ใน 8 วินาที`);
     addLog(`<b style="color:${w.col}">${w.name}</b> ชนะแมตช์ ${w.wins}–${F.find(f=>f!==w).wins}`+(G.bet!==null?(F[G.bet]===w?' · คุณทายถูก!':' · คุณทายผิด'):''));
     betLine(w);
   }else{G.round++;startRound()}
@@ -1781,13 +1783,12 @@ const sndBtn=document.getElementById('sndBtn'),musBtn=document.getElementById('m
 function showSnd(){sndBtn.textContent=SND.on?'เสียงเอฟเฟกต์: เปิด':'เสียงเอฟเฟกต์: ปิด';musBtn.textContent=SND.music?'ดนตรี: เปิด':'ดนตรี: ปิด';sndBtn.classList.toggle('on',SND.on);musBtn.classList.toggle('on',SND.music);
   try{localStorage.setItem('sd-snd',JSON.stringify(SND))}catch(e){}if(AC){SFXG.gain.value=SND.on?1:0;MUSG.gain.value=SND.music?.32:0}}
 sndBtn.addEventListener('click',()=>{initAudio();SND.on=!SND.on;showSnd()});musBtn.addEventListener('click',()=>{initAudio();SND.music=!SND.music;showSnd()});showSnd();
-/* ---------- clip recorder: records the arena with its sound; stops by itself 4 s after a result ---------- */
+/* ---------- clip recorder: records the arena with its sound until the player stops it ---------- */
 const recBtn=document.getElementById('rec'),clipEl=document.getElementById('clip');
 let REC=null,clipURL=null;
 const recMime=(()=>{if(!window.MediaRecorder||!cv.captureStream)return null;for(const m of ['video/mp4;codecs=avc1,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'])try{if(MediaRecorder.isTypeSupported(m))return m}catch(e){}return ''})();
 if(recMime!==null)recBtn.hidden=false;
 function recLabel(){if(!REC){recBtn.textContent='● อัดคลิป';recBtn.classList.remove('on');return}recBtn.classList.add('on');
-  if(REC.stopAt){recBtn.textContent=`■ รู้ผลแล้ว หยุดใน ${Math.max(0,Math.ceil((REC.stopAt-performance.now())/1000))} วิ`;return}
   const sec=Math.floor((performance.now()-REC.t0)/1000);recBtn.textContent=`■ หยุดอัด ${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`}
 function recStart(){
   initAudio();const st=cv.captureStream(60);let dest=null;
@@ -1799,7 +1800,6 @@ function recStart(){
   mr.start(500);REC={mr,t0:performance.now(),stopAt:0,iv:setInterval(recLabel,250)};clipEl.hidden=true;recLabel();
 }
 function recStop(){if(!REC)return;const r=REC;REC=null;clearInterval(r.iv);clearTimeout(r.to);try{r.mr.stop()}catch(e){}recLabel()}
-function recOnResult(){if(REC&&!REC.stopAt){REC.stopAt=performance.now()+4000;REC.to=setTimeout(recStop,4000);recLabel()}}
 recBtn.addEventListener('click',()=>REC?recStop():recStart());
 function showClip(blob,type){
   if(clipURL)URL.revokeObjectURL(clipURL);clipURL=URL.createObjectURL(blob);
