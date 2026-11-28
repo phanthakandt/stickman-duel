@@ -29,7 +29,9 @@ body:not(.picking) .bar{max-width:max(560px,calc((100dvh - 96px)*16/9));margin-i
 #sel{position:relative;padding:clamp(14px,2.5vw,28px);background:radial-gradient(ellipse at 50% 0,#5a2a22,#16110e 70%);display:grid;gap:14px}
 #sel[hidden]{display:none}
 .stage{position:relative}
-#ready{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;background:radial-gradient(ellipse at 50% 55%,#0007,#0000 60%);pointer-events:none}
+#ready{display:none!important;position:absolute;right:14px;bottom:14px;gap:6px;justify-items:end;pointer-events:none}
+.stage:fullscreen #ready:not([hidden]),.stage:-webkit-full-screen #ready:not([hidden]){display:grid!important}
+#ready #go{min-height:48px;padding:0 26px;font-size:20px;animation:none}
 #ready[hidden]{display:none}
 #ready p:empty{display:none}
 #ready p{margin:0;font-weight:600;color:#fff;text-shadow:0 2px 0 #120a07,0 0 12px #000}
@@ -78,7 +80,9 @@ body.picking .bar,body.picking .cards,body.picking #bet{display:none}
 .mode{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}.mode button{min-width:150px}
 #sel.gt .slot.r{opacity:.55;pointer-events:none}
 body.gt #cards,body.gt #bet{display:none}
-#ready.low{align-content:end;padding-bottom:7%;background:linear-gradient(#0000 55%,#000a)}
+#goBar{background:var(--gold);color:#1a120c;border-color:var(--gold);font-weight:700;padding:0 24px}
+#goBar[hidden]{display:none}
+#goMsg{margin:-10px 0 14px;color:var(--gold);font-weight:600}#goMsg:empty,#goMsg[hidden]{display:none}
 @media(max-width:780px){.roster{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.ch{grid-template-columns:1fr;justify-items:center;text-align:center;padding:8px}.ms{width:100%;text-align:left}.slot{padding:8px 10px}}
 .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0 22px}
@@ -133,6 +137,7 @@ h2{font:600 20px Kanit,sans-serif;margin:26px 0 8px}
 </div></div>
 <div class="bar">
   <button id="pause">หยุดชั่วคราว</button>
+  <button id="goBar" hidden>เริ่มสู้!</button>
   <div class="grp" role="group" aria-label="ความเร็ว">
     <button data-sp="0.5">ช้า 0.5×</button><button data-sp="1">ปกติ 1×</button><button data-sp="2" class="on">เร็ว 2×</button>
   </div>
@@ -141,6 +146,7 @@ h2{font:600 20px Kanit,sans-serif;margin:26px 0 8px}
   <button id="fs" hidden>เต็มจอ</button>
   <button id="new">เลือกตัวละครใหม่</button>
 </div>
+<p id="goMsg" hidden></p>
 <div id="clip" hidden></div>
 <p id="bet"></p>
 <div class="cards" id="cards"></div>
@@ -1304,7 +1310,7 @@ function newMatch(){
   parts=[];pops=[];startRound();G.phase='ready';G.msg=null;renderCards();betLine();
   if(GT){addLog(`— ด่าน ${GT.idx+1}/${GT.queue.length}: <b style="color:${F[0].col}">${F[0].name}</b> ปะทะ <b style="color:${F[1].col}">${F[1].name}</b> —`);
     setReady(GT.idx?`ด่าน ${GT.idx+1}/${GT.queue.length} · ${F[0].name} ปะทะ ${F[1].name}`:`ตัวเอก ${F[0].name} · ต้องล้มคู่ต่อสู้ ${GT.queue.length} ตัว ยกเดียวรู้ผล`,GT.idx?'เริ่มสู้!':'เริ่มไล่ล้ม!',false)}
-  else{addLog(`— แมตช์ใหม่: <b style="color:${F[0].col}">${F[0].name}</b> ปะทะ <b style="color:${F[1].col}">${F[1].name}</b> —`);setReady('ทายผู้ชนะด้านล่างก่อนได้เลย','เริ่มสู้!',false)}
+  else{addLog(`— แมตช์ใหม่: <b style="color:${F[0].col}">${F[0].name}</b> ปะทะ <b style="color:${F[1].col}">${F[1].name}</b> —`);setReady('','เริ่มสู้!',false)}
 }
 /* ---------- gauntlet: one hero against every other sword in random order, one round each, until they fall ---------- */
 let GT=null;
@@ -1681,7 +1687,8 @@ let MODE='duel';try{if(localStorage.getItem('sd-mode')==='gauntlet')MODE='gauntl
 const modeBtns=[...document.querySelectorAll('[data-mode]')];
 modeBtns.forEach(b=>b.addEventListener('click',()=>{MODE=b.dataset.mode;try{localStorage.setItem('sd-mode',MODE)}catch(e){}slot=0;renderRoster()}));
 const readyMsg=document.getElementById('readyMsg'),goBtn=document.getElementById('go');
-function setReady(t,b,low){readyMsg.textContent=t;goBtn.textContent=b;document.getElementById('ready').classList.toggle('low',!!low)}
+const goBar=document.getElementById('goBar'),goMsg=document.getElementById('goMsg');
+function setReady(t,b){readyMsg.textContent=t;goBtn.textContent=b;goBar.textContent=b;goMsg.textContent=t}
 /* ---------- skill icons and descriptions on the select screen ---------- */
 const ICON={
   dash:'<path d="M4 6l6 6-6 6M12 6l6 6-6 6"/>',
@@ -1835,13 +1842,14 @@ function showClip(blob,type){
   try{clipEl.scrollIntoView({block:'nearest',behavior:'smooth'})}catch(e){}
 }
 const readyEl=document.getElementById('ready');
-document.getElementById('go').addEventListener('click',()=>{if(G.phase==='gtend'&&GT){gtStart(GT.hero);return}
+function goPress(){if(G.phase==='gtend'&&GT){gtStart(GT.hero);return}
   if(G.phase==='over'){newMatch();return} // สู้ต่อ: set up the next match, then wait for เริ่มสู้
   if(G.phase==='gtnext'&&GT){picks=[GT.hero,GT.queue[GT.idx]];newMatch();return}
-  if(G.phase!=='ready')return;if(REC&&REC.armed)recStart();G.phase='intro';G.pt=0;G.locked=true;renderCards();betLine();if(paused)togglePause()});
+  if(G.phase!=='ready')return;if(REC&&REC.armed)recStart();G.phase='intro';G.pt=0;G.locked=true;renderCards();betLine();if(paused)togglePause()}
+goBtn.addEventListener('click',goPress);goBar.addEventListener('click',goPress);
 function loop(now){
   const dt=Math.min(64,now-last);last=now;
-  readyEl.hidden=selecting||!['ready','gtend','over','gtnext'].includes(G.phase);
+  {const show=!selecting&&['ready','gtend','over','gtnext'].includes(G.phase);readyEl.hidden=goBar.hidden=goMsg.hidden=!show}
   if(selecting){G.f++;drawPortraits();requestAnimationFrame(loop);return}
   if(!paused){acc+=dt*speed*(G.slowT>0?.3:1);let n=0;while(acc>=FPS&&n<10){step();acc-=FPS;n++}if(n>=10)acc=0}
   render();requestAnimationFrame(loop);
