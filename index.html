@@ -1134,6 +1134,8 @@ const myClones=f=>CL.filter(c=>c.owner===f&&!c.gone);
 function pickTarget(me,foe){const c=[foe,...myClones(foe)].filter(k=>!(k.vanish>0));return c.length?c.reduce((p,k)=>Math.abs(k.x-me.x)<Math.abs(p.x-me.x)?k:p):foe} // the foe goes for whichever body is nearest
 function vanishNow(f,n){f.vanish=n;f.blockAt=0;poof(f.x,f.y-80,f.col)}
 /* ---------- insects (ภมรมฤตยู): bugs that circle the foe and bite; a stinger thrust that poisons ---------- */
+function afterimages(f,x0,x1){const snap={...f,p:{...(f.p||{})},trail:[],fl:0,rage:0,fireBody:0,fireBlade:0,shield:0,frozen:0,frost:0,iceBlade:0,critNext:false};
+  return{t:0,upd(){if(++this.t>30)this.dead=1},draw(){for(let k=1;k<=5;k++){const u=k/6,a=Math.min(.4,.4-(this.t-u*8)/40);if(this.t<u*8||a<=0)continue;ctx.save();ctx.globalAlpha=a;drawFighter({...snap,x:x0+(x1-x0)*u});ctx.restore()}}}}
 function bug(f,o,life,dmg,gap,roam=0){let tg=o,ang=R(0,6.28);const r=R(38,70),sp=R(.05,.09)*(Math.random()<.5?-1:1),ph=R(0,6);
   // roam: first loop around the whole arena for a while, then go for the foe
   const ax=R(.018,.03),ay=R(.03,.05),rx=R(220,400),ry=R(50,110),cy=R(210,290),p2=R(0,6);
@@ -1235,10 +1237,17 @@ const SKILL2={
     if(t===22||t===36){f.upose=IAI;f.uk=.6}
     if(t===52){f.upose=IAI;f.uk=.25}
     return t>=62}},
-  swarm:{name:'เหล็กในพิฆาต',lead:10,want:d=>d<260?.42:0,run(f,o,t){ // a stinger lunge: the thrust poisons and slows
-    if(t===1){f.upose=[-.1,4,-6,1.57,.4,.1,-.4,-.6];f.uk=.5}
-    if(t===8){f.upose=[.45,44,-2,1.57,...LL];f.uk=1;f.vx=f.s*15;sfx('sting')}
-    if(t===13){f.vx=f.s*3;const dx=(o.x-f.x)*f.s;if(dx>-10&&dx<130&&o.y>GY-120){const r=skillHit(f,o,8,o.x,o.y-95,4,f.x);if(r==='hit'){afflict(f,o,150,240);slashFx(o.x,o.y-95,0,f.col)}else if(r==='deflect'){set(f,'recoil');f.dur=24}}}
+  swarm:{name:'เหล็กในพิฆาต',lead:12,want:d=>d>40?.34:.16,run(f,o,t){ // a stinger dash clean across the arena, through the foe; the hit poisons and slows
+    if(t===1){f.upose=[-.2,-6,-4,1.57,.45,.1,-.5,-.7];f.uk=.5;f.dx1=f.s>0?W-50:50;f.dhit=0;sfx('cast',0)}
+    if(t>=2&&t<10&&t%2===0&&f.tipW){sparks(f.tipW[0],f.tipW[1],3,2);parts.push({x:f.tipW[0],y:f.tipW[1],vx:0,vy:0,life:10,col:'#fff',r:3,fl:1})}
+    if(t===10){f.upose=[.5,46,-2,1.57,...LL];f.uk=1;f.dashing=1;f.dx0=f.x;sfx('dash');sfx('sting');G.shake=Math.max(G.shake,5);
+      ufx.push(streak(f.x,f.dx1,f.y-86,f.col));ufx.push(afterimages(f,f.x,f.dx1))}
+    if(t>=10&&t<18){const px=f.x,nx=f.dx0+(f.dx1-f.dx0)*(t-9)/8;f.x=nx;f.vx=0;
+      for(let i=0;i<5;i++)parts.push({x:px+(nx-px)*Math.random(),y:f.y-R(30,150),vx:-f.s*R(5,11),vy:0,life:RI(8,16),col:Math.random()<.5?'#ffffff':f.col,r:R(1,2.2),sp:1});
+      if(!f.dhit&&o.st!=='ko'&&o.y>GY-130&&(o.x-px)*f.s>=-12&&(o.x-nx)*f.s<=0){f.dhit=1;const r=skillHit(f,o,7,o.x,o.y-95,3,f.dx0);
+        if(r==='hit'){afflict(f,o,110,195);flashFx(o.x,o.y-95,130);slashFx(o.x,o.y-95,0,f.col);slashFx(o.x,o.y-92,0,'#fff');sparks(o.x,o.y-95,30,9);pop(o.x,o.y-200,'ปัก!',f.col,3);G.hitstop=8;G.shake=12}
+        else if(r==='deflect'){f.dashing=0;set(f,'recoil');f.dur=24;f.vx=-f.s*6;return false}}}
+    if(t===18){f.dashing=0;f.s=o.x>f.x?1:-1;f.upose=ST.mushi;f.uk=.35;dust(f.x)}
     return t>=30}},
   clone:{name:'แยกเงา',lead:99,want:(d,f)=>myClones(f).length>=2?0:d<320?.42:.15,run(f,o,t){ // vanish, then come back with a shadow clone on the foe's far side
     if(t===1){f.upose=ST.kage;f.uk=.5}
@@ -1343,6 +1352,7 @@ function update(f,o,think){
   iceTick(f);
   if(f.banished>0){f.banished--;f.vx=f.vy=0;if(f.st!=='stun'&&f.st!=='ko')set(f,'stun');if(f.banished===0&&f.st==='stun')idle(f)} // gone into another dimension
   if(f.vanish>0)f.vanish--;
+  if(f.dashing&&f.st!=='skill')f.dashing=0;
   if(f.rooted>0){f.rooted--;f.vx=0}
   if(f.rage>0){if(G.phase==='fight'&&!G.ult)f.rage--;if(G.f%2===0)monoRun(f.ult==='mimic',()=>parts.push({x:f.x+R(-20,20),y:f.y-R(10,130),vx:R(-.4,.4),vy:-R(1,2.5),life:RI(16,28),col:Math.random()<.5?f.col:'#ff8a8a',r:R(1.5,3),fl:1}))}
   if(f.shieldT>0){f.shieldT--;if(f.shieldT<=0&&f.shield>0){f.shield=0;shatter(f)}}
@@ -1413,7 +1423,7 @@ function step(){
   update(a,pickTarget(a,b),fight);update(b,pickTarget(b,a),fight);
   CL.forEach(c=>{if(c.gone)return;const foe=c.owner===a?b:a;c.life--;update(c,foe,fight);c.en=0;if(c.life<=0||c.owner.st==='ko'||G.phase==='ko')killClone(c,1)});CL=CL.filter(c=>!c.gone);
   const dx=b.x-a.x;
-  if(Math.abs(dx)<34&&a.st!=='ko'&&b.st!=='ko'&&!(a.banished>0)&&!(b.banished>0)&&!(a.vanish>0)&&!(b.vanish>0)&&Math.abs(a.y-b.y)<60){const push=(34-Math.abs(dx))/2*(Math.sign(dx)||1);a.x-=push;b.x+=push}
+  if(Math.abs(dx)<34&&a.st!=='ko'&&b.st!=='ko'&&!(a.banished>0)&&!(b.banished>0)&&!(a.vanish>0)&&!(b.vanish>0)&&!a.dashing&&!b.dashing&&Math.abs(a.y-b.y)<60){const push=(34-Math.abs(dx))/2*(Math.sign(dx)||1);a.x-=push;b.x+=push}
   projs.forEach(p=>{
     p.x+=p.vx;p.t++;
     if(p.t%2)parts.push({x:p.x,y:p.y+R(-6,6),vx:-p.vx*.1,vy:R(-1,1),life:16,col:p.o.col,r:R(2,4)});
@@ -1775,7 +1785,7 @@ const SKTXT={
   glacier:[['ไอเหมันต์','พ่นไอเย็นเป็นสายไปข้างหน้า โดนแล้วได้รับดาเมจและติดแต้มน้ำแข็ง 1 แต้ม (สะสมครบ 3 แต้ม น้ำแข็งจะแตกระเบิดใส่ตัวศัตรู ดาเมจรุนแรง)'],['ดาบเหมันต์','เคลือบดาบด้วยน้ำแข็ง 7 วินาที ฟันโดนทุกครั้งเพิ่มแต้มน้ำแข็ง 1 แต้ม'],['ธารน้ำแข็ง','ธารน้ำแข็งงอกขึ้นกลืนตัวคู่ต่อสู้ ตัวแข็งขยับไม่ได้ราว 3 วินาที โดนความเย็นกัดเสียเลือดต่อเนื่อง ปิดท้ายด้วยแต้มน้ำแข็งอีก 2 แต้ม']],
   void:[['ฟันมิติ','ฟันจนอากาศตรงหน้าแตกร้าวเหมือนกระจก ศัตรูที่อยู่ในระยะโดนดาเมจและกระเด็น'],['ประตูมิติ','เปิดประตูมิติกลางระหว่างสองฝ่าย ดึงทั้งตัวเองและศัตรูหายไปจากสนามราว 1.5 วินาที ตอนกลับออกมาทั้งคู่กระเด็นไปคนละทาง แล้วสุ่ม 1 ใน 2 อย่าง: ฟื้นเลือดให้ตัวเอง หรือศัตรูโดนแรงบีบมิติเสียเลือด'],['ฉีกห้วงมิติ','ฟันมิติอย่างรุนแรงจนฉีกขาดเป็นช่องโหว่ของอวกาศ ศัตรูโดนกระหน่ำจากในรอยแยกหลายครั้งก่อนปิดท้ายด้วยแรงระเบิด']],
   clone:[['ล่องหน','หายตัวไปครู่หนึ่ง ระหว่างนั้นโดนโจมตีไม่ได้ แล้วโผล่ออกมาข้างหลังศัตรูพร้อมฟันสวนทันที'],['แยกเงา','หายตัวแล้วกลับมาพร้อมร่างแยก 1 ร่างที่อีกฝั่งของศัตรู ร่างแยกฟันได้เบากว่าร่างจริง (40%) โดนอะไรนิดเดียวก็สลาย อยู่ได้นานสุด 8 วินาที และศัตรูจะหันไปสู้กับร่างที่อยู่ใกล้ที่สุด'],['พันเงามายา','หายตัวแล้วกลับมาพร้อมร่างแยก 3 ร่างล้อมศัตรู ร่างแยกพุ่งฟันผ่านทีละร่าง ปิดท้ายด้วยร่างจริง จากนั้นร่างแยกอยู่ช่วยสู้ต่อ']],
-  swarm:[['ภมรรุม','เรียกแมลง 3 ตัวออกมาบินวนรอบสังเวียน 2–4 วินาที แล้วค่อยบินไปรุมกัดศัตรูอีกราว 5 วินาที ใช้ซ้ำเพื่อเพิ่มแมลงได้เรื่อยๆ (กด 3 ครั้ง = 9 ตัว) ศัตรูที่ตั้งการ์ดหันหน้ารับจะปัดได้'],['เหล็กในพิฆาต','พุ่งแทงดาบไปข้างหน้าเหมือนเหล็กใน ถ้าโดนศัตรูจะติดพิษ (ช้าลงหนัก ตีเบาลง 30% และเสียเลือดทีละน้อย) 5 วินาที'],['มหาฝูงภมร','ปล่อยแมลงอีก 10 ตัวขึ้นไปบินวนรอบสังเวียน รวมกับแมลงจากสกิล 1 ที่บินอยู่แล้ว จากนั้นฟันดาบสั่งการ แมลงทุกตัวพุ่งเข้ารุมกัดศัตรูพร้อมกัน']],
+  swarm:[['ภมรรุม','เรียกแมลง 3 ตัวออกมาบินวนรอบสังเวียน 2–4 วินาที แล้วค่อยบินไปรุมกัดศัตรูอีกราว 5 วินาที ใช้ซ้ำเพื่อเพิ่มแมลงได้เรื่อยๆ (กด 3 ครั้ง = 9 ตัว) ศัตรูที่ตั้งการ์ดหันหน้ารับจะปัดได้'],['เหล็กในพิฆาต','ง้างดาบแล้วพุ่งแทงเหมือนเหล็กในข้ามไปสุดสังเวียน ทะลุผ่านตัวศัตรู ทิ้งเงาตามหลังเป็นทาง ถ้าโดนศัตรูจะติดพิษ (ช้าลงหนัก ตีเบาลง 30% และเสียเลือดทีละน้อย) 3 วินาที'],['มหาฝูงภมร','ปล่อยแมลงอีก 10 ตัวขึ้นไปบินวนรอบสังเวียน รวมกับแมลงจากสกิล 1 ที่บินอยู่แล้ว จากนั้นฟันดาบสั่งการ แมลงทุกตัวพุ่งเข้ารุมกัดศัตรูพร้อมกัน']],
   mimic:[['เงาสะท้อน','สุ่มยืมสกิล 1 ของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ'],['เงาสะท้อนคู่','สุ่มยืมสกิล 2 ของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ'],['จันทร์สะท้อนพลัง','สุ่มยืมท่าไม้ตายของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ']]
 };
 const skIcons=r=>`<span class="sks">${[0,1,2].map(k=>`<span class="sk${k===2?' u':''}" role="button" tabindex="0" data-sk="${r.ult}:${k}" style="--c:${r.col}" aria-label="${SKTXT[r.ult][k][0]}"><i><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[r.ult]}</svg></i>${k===2?'ไม้ตาย':'สกิล '+(k+1)}</span>`).join('')}</span>`;
