@@ -197,11 +197,12 @@ const ROSTER=[
   {name:'นทีสมุทร',ult:'tide',stance:'nagare',alt:['#7fffd4','#1f6f5f'],col:'#3d6cff',dark:'#122a7a',acc:'topknot',style:'สายวารี',desc:'บอลน้ำ น้ำพุพุ่ง คลื่นยักษ์ซัด',agg:0.67,pb:0.33,agi:.18,jumpy:.12,spd:2.7,pow:1.06},
   {name:'บุปผามัจจุราช',ult:'bloom',stance:'hana',alt:['#ffd84a','#8a6a12'],col:'#e255e0',dark:'#7a1f78',acc:'thorn',style:'สายบุปผาพิษ',desc:'ดอกไม้ดูดเลือด ทางดอกไม้พิษทำให้เชื่องช้า',agg:.62,pb:.3,agi:.18,jumpy:.12,spd:2.7,pow:1},
   {name:'เหมันต์ธารา',ult:'glacier',stance:'yuki',alt:['#d6c2ff','#5a4a99'],col:'#a8f0ff',dark:'#2a7a99',acc:'icicle',style:'สายเหมันต์',desc:'สะสมแต้มน้ำแข็งครบ 3 แล้วแตกระเบิด แช่แข็งศัตรู',agg:.66,pb:.34,agi:.16,jumpy:.1,spd:2.7,pow:1.06},
-  {name:'อนันตดารา',ult:'void',stance:'sora',alt:['#ffd27a','#7a5a1a'],col:'#8f7bff',dark:'#2a1f6b',acc:'orbit',style:'สายต่างมิติ',desc:'ฟันอากาศแตกเป็นแก้ว พาศัตรูหายเข้ามิติ ฉีกห้วงอวกาศ',agg:.64,pb:.3,agi:.2,jumpy:.14,spd:2.8,pow:1}
+  {name:'อนันตดารา',ult:'void',stance:'sora',alt:['#ffd27a','#7a5a1a'],col:'#8f7bff',dark:'#2a1f6b',acc:'orbit',style:'สายต่างมิติ',desc:'ฟันอากาศแตกเป็นแก้ว พาศัตรูหายเข้ามิติ ฉีกห้วงอวกาศ',agg:.64,pb:.3,agi:.2,jumpy:.14,spd:2.8,pow:1},
+  {name:'มายาพันร่าง',ult:'clone',stance:'kage',alt:['#ff8fd0','#7a2a5a'],col:'#b6ff5c',dark:'#4d7a12',acc:'ninja',style:'สายแยกร่าง',desc:'ล่องหนหายตัว แยกร่างเงาออกมาช่วยรุม',agg:.68,pb:.26,agi:.24,jumpy:.16,spd:3,pow:1}
 ];
 let fxsDummy=0,F=[],projs=[],parts=[],pops=[],G={f:0},logItems=[],picks=[0,1],slot=0,selecting=true;
 function mk(i,r){const o=Object.assign({id:i,wins:0,ultCd:0},ROSTER[r]);if(i===1&&picks[0]===picks[1]){o.col=o.alt[0];o.dark=o.alt[1];o.name+=' II'}return o}
-function resetF(f){Object.assign(f,{rage:0,slow:0,banished:0,frost:0,frostT:0,frostSrc:null,iceBlade:0,frozen:0,frozenSrc:null,poison:0,poisonSrc:null,shield:0,shieldT:0,critNext:false,rooted:0,fireBlade:0,fireBody:0,burn:0,burnSrc:null,ultUsed:false,fl:0,upose:null,blockAt:0,counter:false,trail:[],x:f.id?660:300,y:GY,vx:0,vy:0,s:f.id?-1:1,hp:100,gh:100,en:0,st:'idle',t:0,cd:RI(20,40),hit:false,p:null,ph:0,wd:1,aid:0,seen:-1,used:false,dur:0})}
+function resetF(f){Object.assign(f,{rage:0,slow:0,banished:0,vanish:0,frost:0,frostT:0,frostSrc:null,iceBlade:0,frozen:0,frozenSrc:null,poison:0,poisonSrc:null,shield:0,shieldT:0,critNext:false,rooted:0,fireBlade:0,fireBody:0,burn:0,burnSrc:null,ultUsed:false,fl:0,upose:null,blockAt:0,counter:false,trail:[],x:f.id?660:300,y:GY,vx:0,vy:0,s:f.id?-1:1,hp:100,gh:100,en:0,st:'idle',t:0,cd:RI(20,40),hit:false,p:null,ph:0,wd:1,aid:0,seen:-1,used:false,dur:0})}
 const set=(f,st)=>{f.st=st;f.t=0;f.hit=false;f.hd=0};
 const idle=f=>set(f,'idle');
 
@@ -225,7 +226,8 @@ const ST={
   nagare:[.15,24,30,1.4,.6,.15,-.45,-.65],
   hana:[.12,-4,20,2.6,.55,.12,-.4,-.6],
   yuki:[.1,24,14,1.8,.55,.12,-.4,-.6],
-  sora:[.15,-10,10,2.0,.6,.15,-.45,-.65]
+  sora:[.15,-10,10,2.0,.6,.15,-.45,-.65],
+  kage:[.3,4,26,-1.4,.8,.15,-.6,-.9]
 };
 const ATK={
   // four normal cuts, light to heavy
@@ -392,6 +394,7 @@ const SFX={
     lf.frequency.value=23;lg.gain.value=9;lf.connect(lg);lg.connect(o.frequency);lp.type='lowpass';lp.frequency.setValueAtTime(900,t);lp.frequency.exponentialRampToValueAtTime(300,t+1.3);env(g,t,.06,.7,1.3);o.connect(lp);lp.connect(g);g.connect(SFXG);g.connect(REV);o.start(t);lf.start(t);o.stop(t+1.5);lf.stop(t+1.5);
     nz(t,{type:'bandpass',f:[[0,500],[1.2,250]],q:1.2,a:.06,d:1.2,peak:.6,rev:1});thump(t,55,1,.8)},
   shatter(){const t=AC.currentTime;for(let k=0;k<6;k++)nz(t+k*.025,{type:'bandpass',f:[[0,R(2500,6000)]],q:4,d:.12,peak:.4});nz(t,{type:'lowpass',f:[[0,1500],[.3,200]],d:.3,peak:.4})},
+  poof(){const t=AC.currentTime;nz(t,{type:'lowpass',f:[[0,1800],[.25,300]],q:.7,a:.01,d:.25,peak:.45});nz(t,{type:'bandpass',f:[[0,600],[.2,2400]],q:1.2,a:.02,d:.18,peak:.18})},
   glass(big){ // "เพล้ง": a bright crash, a burst of crackle, then shards tinkling down
     const t=AC.currentTime,k=big?1.3:1;
     nz(t,{type:'highpass',f:[[0,2200],[.2,4000]],q:.5,a:.001,d:.22*k,peak:.95});
@@ -455,7 +458,7 @@ function deflect(o,cx,cy){sfx('deflect');
   G.hitstop=13;G.shake=8;
 }
 function strike(f,o,A){
-  if(o.st==='ko'||o.banished>0)return;
+  if(o.st==='ko'||o.banished>0||o.vanish>0)return;
   const dx=(o.x-f.x)*f.s;
   if(dx<-10||dx>A.rg||Math.abs(o.y-f.y)>80)return;
   f.hit=true;const dmg=Math.round(R(A.dmg[0],A.dmg[1])*f.pow*weak(f)*(f.iceBlade>0?1.15:1));
@@ -491,6 +494,7 @@ function strike(f,o,A){
   if(o.hp<=0)ko(f,o);
 }
 function ko(f,o){
+  if(o.clone){killClone(o);return}if(f.clone)f=f.owner; // a clone's kill counts for its owner
   if(G.winner)return; // already decided this round
   sfx('ko');o.hp=0;set(o,'ko');o.vx=f.s*9;o.vy=-9;f.wins++;projs=[];
   G.phase='ko';G.pt=0;G.slowT=50;G.hitstop=14;G.shake=14;G.winner=f;
@@ -504,7 +508,7 @@ function jump(f,dir){set(f,'air');f.vy=-13;f.vx=dir*4.6*[1,.75,.6][drag(f)];f.us
 let ufx=[];
 let HPM=2;try{HPM=+localStorage.getItem('sd-hpm2')||2}catch(e){}
 const AURA=175,ARMOR=.75;
-const hurtHp=(o,d)=>{if(o.fireBody>0)d*=ARMOR;if(o.shield>0){const a=Math.min(o.shield,d);o.shield-=a;d-=a;if(o.shield<=0){o.shield=0;o.shieldT=0;shatter(o)}}o.hp=Math.max(0,o.hp-d/HPM)},healHp=(o,h)=>{o.hp=Math.min(100,o.hp+h/HPM)};
+const hurtHp=(o,d)=>{if(o.clone){if(d>0)killClone(o);return}if(o.fireBody>0)d*=ARMOR;if(o.shield>0){const a=Math.min(o.shield,d);o.shield-=a;d-=a;if(o.shield<=0){o.shield=0;o.shieldT=0;shatter(o)}}o.hp=Math.max(0,o.hp-d/HPM)},healHp=(o,h)=>{o.hp=Math.min(100,o.hp+h/HPM)};
 const clampX=x=>Math.max(40,Math.min(W-40,x));
 const RAISE=[0,2,-52,Math.PI,.3,.1,-.3,-.4],IAI=[.35,0,32,-1.65,.9,.15,-.7,-1.1];
 const ULT_CD=2400; // 40 s between ultimates, carried across rounds
@@ -789,6 +793,17 @@ const ULT={
     if(e===82)cut(f,o,0,6,1);
     return e>=115;
   },
+  clone(f,o,e){ // มายาพันร่าง: vanish, return with three shadow clones, and all four cut through the foe in turn
+    if(e===0){set(f,'ult');f.upose=[0,6,-34,3.55,.5,.1,-.35,-.55];f.uk=.4}
+    if(e===8)vanishNow(f,40);
+    if(e===40){const side=o.x>f.x?1:-1;f.vanish=0;f.x=clampX(o.x-side*150);f.s=side;poof(f.x,f.y-80,f.col);f.upose=ATK.kesa.A;f.uk=.6;
+      f.ucl=[-80,80,150].map(dx=>{const c=spawnClone(f,o.x+side*dx);c.s=o.x>c.x?1:-1;set(c,'idle');return c});G.shake=6}
+    const cs=f.ucl||[];
+    [50,58,66].forEach((at,k)=>{const c=cs[k];if(e===at&&c&&!c.gone){const x0=c.x,sd=o.x>x0?1:-1,x1=clampX(o.x+sd*90);ufx.push(streak(x0,x1,c.y-82,f.col));c.x=x1;c.s=-sd;cut(f,o,R(-1,1),4)}});
+    if(e===78){const x0=f.x,sd=o.x>x0?1:-1,x1=clampX(o.x+sd*100);ufx.push(streak(x0,x1,f.y-82,f.col));f.x=x1;f.s=-sd;f.upose=[.4,36,20,.5,...LL];f.uk=1;cut(f,o,-1.2,12,1)}
+    if(e===96){f.upose=ST.kage;f.uk=.3}
+    return e>=112;
+  },
   void(f,o,e){ // อนันตดารา: one savage cut tears space open; the foe is battered by the void inside
     if(e===0){set(f,'ult');f.upose=ATK.men.A;f.uk=.5}
     if(e===12){f.upose=ATK.men.B;f.uk=1;sfx('glass',1);sfx('boom');G.white=.6;G.shake=18;ufx.push(rift(f,o));ufx.push(crack(f,o.x,o.y-100,1.8))}
@@ -843,7 +858,7 @@ function castSkill(f,o,big){sfx('cast',big);if(f.ult==='mimic'){const k=big?'pre
   if(big){fxs.push({ty:'ring',x:f.x,y:GY,col:f.col,t:0,life:36});sparks(f.x,f.y-90,26,6);G.shake=Math.max(G.shake,5)}
 }
 function skillHit(f,o,d,x,y,kb,from){
-  if(o.st==='ko'||G.ult||o.banished>0)return 'miss';
+  if(o.st==='ko'||G.ult||o.banished>0||o.vanish>0)return 'miss';
   x=x??o.x;y=y??o.y-90;const dir=Math.sign(o.x-(from??f.x))||f.s;
   const facing=from==null||o.s===Math.sign(from-o.x);
   if((o.st==='block'||o.st==='parry')&&facing){
@@ -931,6 +946,11 @@ const SKILL={
       const r=skillHit(f,o,9,o.x,o.y-90,6,x1);if(r==='hit')slashFx(o.x,o.y-90,R(-1,1),f.col);if(r==='deflect'){set(f,'recoil');f.dur=26}}
     if(t===26){f.s=o.x>f.x?1:-1;f.upose=IAI;f.uk=.3}
     return t>=36}},
+  clone:{name:'ล่องหน',lead:99,want:d=>d<220?.32:.1,run(f,o,t){ // vanish for a moment and slip round behind the foe
+    if(t===1){f.upose=ST.kage;f.uk=.5}
+    if(t===6)vanishNow(f,54);
+    if(t===58){const side=o.x>f.x?1:-1;f.vanish=0;f.x=clampX(o.x+side*70);f.s=-side;poof(f.x,f.y-80,f.col);f.counter=true}
+    return t>=62}},
   void:{name:'ฟันมิติ',lead:12,want:d=>d<240?.4:.05,run(f,o,t){ // a cut that cracks the air itself like glass
     if(t===1){f.upose=ATK.kesa.A;f.uk=.5}
     if(t===10){f.upose=ATK.kesa.B;f.uk=1;arcFx(f,ATK.kesa);const inR=(o.x-f.x)*f.s>-10&&Math.abs(o.x-f.x)<240&&o.y>GY-140;
@@ -1073,6 +1093,17 @@ function rift(f,o){const cx=o.x,cy=o.y-100,a=f.s>0?.55:Math.PI-.55,L=560,N=18,ux
       ctx.lineJoin='round';ctx.shadowColor=f.col;ctx.shadowBlur=26;ctx.strokeStyle=f.col;ctx.lineWidth=4;ctx.stroke();ctx.shadowBlur=0;ctx.strokeStyle='#ffffff';ctx.lineWidth=1.6;ctx.stroke();
       ctx.globalAlpha=op;ctx.strokeStyle='#ffffffcc';ctx.lineWidth=1.2;br.forEach(b=>{const [x,y,u]=C[b.i],sd=Math.sign((b.pts[0][0]-x)*nx+(b.pts[0][1]-y)*ny)||1;ctx.beginPath();ctx.moveTo(x+nx*w(u)*sd,y+ny*w(u)*sd);b.pts.forEach(([px,py])=>ctx.lineTo(px+nx*w(u)*sd,py+ny*w(u)*sd));ctx.stroke()});
       ctx.restore()}}}
+/* ---------- clones (มายาพันร่าง): vanishing, shadow copies that hit softly and pop at the first touch ---------- */
+let CL=[];
+const CLONE_POW=.4,CLONE_LIFE=480;
+function poof(x,y,col){sfx('poof');for(let i=0;i<22;i++){const a=R(0,6.28),v=R(.8,3.5);parts.push({x:x+R(-14,14),y:y+R(-60,40),vx:Math.cos(a)*v,vy:Math.sin(a)*v-.6,life:RI(18,32),col:Math.random()<.35?col:'#cfcfd8',r:R(2.5,5),fl:1})}}
+function spawnClone(f,x){const c=Object.assign({},f,{clone:1,owner:f,x:clampX(x),y:GY,vx:0,vy:0,st:'idle',t:0,cd:RI(4,14),p:f.p?{...f.p}:null,trail:[],en:0,ultCd:1e9,pow:f.pow*CLONE_POW,hp:100,gh:100,life:CLONE_LIFE,
+    vanish:0,banished:0,frozen:0,burn:0,poison:0,slow:0,rooted:0,fireBlade:0,fireBody:0,rage:0,shield:0,shieldT:0,critNext:false,iceBlade:0,frost:0,aid:0,seen:-1,blockAt:0,counter:false,hit:false,fl:0,wins:0});
+  CL.push(c);poof(c.x,GY-80,f.col);return c}
+function killClone(c,quiet){if(c.gone)return;c.gone=1;c.st='ko';c.hp=0;poof(c.x,c.y-80,c.col);if(!quiet)pop(c.x,c.y-150,'ร่างแยกสลาย','#cfcfd8')}
+const myClones=f=>CL.filter(c=>c.owner===f&&!c.gone);
+function pickTarget(me,foe){const c=[foe,...myClones(foe)].filter(k=>!(k.vanish>0));return c.length?c.reduce((p,k)=>Math.abs(k.x-me.x)<Math.abs(p.x-me.x)?k:p):foe} // the foe goes for whichever body is nearest
+function vanishNow(f,n){f.vanish=n;f.blockAt=0;poof(f.x,f.y-80,f.col)}
 /* ---------- big skills: two thirds of mana, one per sword ---------- */
 function ember(f,o,x0,x1){return{t:0,x:x0,y:GY-40,upd(){this.t++;const u=Math.min(1,this.t/26);this.x=x0+(x1-x0)*u;this.y=GY-40-Math.sin(u*Math.PI)*110+u*40;
     if(this.t%2)parts.push({x:this.x,y:this.y,vx:R(-.4,.4),vy:-R(.5,1.5),life:14,col:f.col,r:R(1.5,3),fl:1});
@@ -1146,6 +1177,11 @@ const SKILL2={
     if(t===22||t===36){f.upose=IAI;f.uk=.6}
     if(t===52){f.upose=IAI;f.uk=.25}
     return t>=62}},
+  clone:{name:'แยกเงา',lead:99,want:(d,f)=>myClones(f).length>=2?0:d<320?.42:.15,run(f,o,t){ // vanish, then come back with a shadow clone on the foe's far side
+    if(t===1){f.upose=ST.kage;f.uk=.5}
+    if(t===6)vanishNow(f,34);
+    if(t===40){f.vanish=0;poof(f.x,f.y-80,f.col);const side=o.x>f.x?1:-1,c=spawnClone(f,o.x+side*80);c.s=-side}
+    return t>=48}},
   void:{name:'ประตูมิติ',lead:99,want:d=>d<240?.4:0,run(f,o,t){ // a portal swallows the foe; when they come back, either the caster heals or the foe is crushed
     if(t===1){f.upose=[.1,20,-10,2.4,.5,.1,-.4,-.6];f.uk=.45}
     if(t===8){f.upose=[.3,36,4,1.57,...LL];f.uk=.9;sfx('warp');ufx.push(voidGate(f,o,(f.x+o.x)/2))}
@@ -1180,7 +1216,7 @@ function brain(f,o){
     if(!f.used&&d<150&&f.vy>-7&&Math.sign(f.vx)===dir){set(f,'airslash');f.used=true;f.aid++}
     return;
   }
-  if(f.en>=100&&f.hp<40&&f.ultCd<=0&&o.st!=='ko'&&!(o.banished>0)&&f.y>=GY){startUlt(f,o);return}
+  if(f.en>=100&&f.hp<40&&f.ultCd<=0&&o.st!=='ko'&&!(o.banished>0)&&!o.clone&&f.y>=GY){startUlt(f,o);return}
   const A=ATK[o.st],melee=(A&&A.rg>0&&d<210&&o.t<A.w)||(o.st==='skill'&&o.t<10&&(o.big?SKILL2:SKILL)[kitOf(o)].lead<90);
   const pr=projs.find(p=>p.o!==f&&Math.sign(f.x-p.x)===Math.sign(p.vx)&&Math.abs(f.x-p.x)<260);
   if((melee||pr)&&f.seen!==o.aid){
@@ -1242,6 +1278,7 @@ function update(f,o,think){
   fireTick(f,o);
   iceTick(f);
   if(f.banished>0){f.banished--;f.vx=f.vy=0;if(f.st!=='stun'&&f.st!=='ko')set(f,'stun');if(f.banished===0&&f.st==='stun')idle(f)} // gone into another dimension
+  if(f.vanish>0)f.vanish--;
   if(f.rooted>0){f.rooted--;f.vx=0}
   if(f.rage>0){if(G.phase==='fight'&&!G.ult)f.rage--;if(G.f%2===0)monoRun(f.ult==='mimic',()=>parts.push({x:f.x+R(-20,20),y:f.y-R(10,130),vx:R(-.4,.4),vy:-R(1,2.5),life:RI(16,28),col:Math.random()<.5?f.col:'#ff8a8a',r:R(1.5,3),fl:1}))}
   if(f.shieldT>0){f.shieldT--;if(f.shieldT<=0&&f.shield>0){f.shield=0;shatter(f)}}
@@ -1250,7 +1287,7 @@ function update(f,o,think){
 }
 
 /* ---------- flow ---------- */
-function startRound(){F.forEach(resetF);projs=[];ufx=[];props=[];G.ult=null;G.camT=null;G.darkT=0;G.phase='intro';G.pt=0;G.timer=3600;G.winner=null}
+function startRound(){CL=[];F.forEach(resetF);projs=[];ufx=[];props=[];G.ult=null;G.camT=null;G.darkT=0;G.phase='intro';G.pt=0;G.timer=3600;G.winner=null}
 function newMatch(){
   F=[mk(0,picks[0]),mk(1,picks[1])];G={f:G.f||0,round:1,phase:'ready',pt:0,timer:3600,hitstop:0,shake:0,slowT:0,msg:null,bet:null,locked:false,gt:!!GT};
   parts=[];pops=[];startRound();G.phase='ready';G.msg=null;renderCards();betLine();
@@ -1308,9 +1345,10 @@ function step(){
     if(G.pt===195)msg('Duel!',45);
     if(G.pt>=200)G.phase='fight';
   }
-  update(a,b,fight);update(b,a,fight);
+  update(a,pickTarget(a,b),fight);update(b,pickTarget(b,a),fight);
+  CL.forEach(c=>{if(c.gone)return;const foe=c.owner===a?b:a;c.life--;update(c,foe,fight);c.en=0;if(c.life<=0||c.owner.st==='ko'||G.phase==='ko')killClone(c,1)});CL=CL.filter(c=>!c.gone);
   const dx=b.x-a.x;
-  if(Math.abs(dx)<34&&a.st!=='ko'&&b.st!=='ko'&&!(a.banished>0)&&!(b.banished>0)&&Math.abs(a.y-b.y)<60){const push=(34-Math.abs(dx))/2*(Math.sign(dx)||1);a.x-=push;b.x+=push}
+  if(Math.abs(dx)<34&&a.st!=='ko'&&b.st!=='ko'&&!(a.banished>0)&&!(b.banished>0)&&!(a.vanish>0)&&!(b.vanish>0)&&Math.abs(a.y-b.y)<60){const push=(34-Math.abs(dx))/2*(Math.sign(dx)||1);a.x-=push;b.x+=push}
   projs.forEach(p=>{
     p.x+=p.vx;p.t++;
     if(p.t%2)parts.push({x:p.x,y:p.y+R(-6,6),vx:-p.vx*.1,vy:R(-1,1),life:16,col:p.o.col,r:R(2,4)});
@@ -1437,6 +1475,7 @@ function drawFighter(f){
     ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(hx-s*11,hy-6);ctx.quadraticCurveTo(hx-s*24,hy-9+wv,hx-s*34,hy-2+wv*1.5);ctx.moveTo(hx-s*11,hy-5);ctx.quadraticCurveTo(hx-s*22,hy-2+wv,hx-s*30,hy+6+wv*1.3);ctx.stroke();
     ctx.fillStyle='#1f3d1a';for(const dx of [-8,-2,4,10]){ctx.beginPath();ctx.moveTo(hx+s*dx-2,hy-8);ctx.lineTo(hx+s*dx,hy-13);ctx.lineTo(hx+s*dx+2,hy-8);ctx.fill()}
     ctx.fillStyle=flash?'#fff':f.col;ctx.fillRect(hx-s*12-2,hy-8,4,4)}
+  if(f.acc==='ninja'){ctx.strokeStyle='#1c1515';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(hx-12,hy-5);ctx.lineTo(hx+12,hy-5);ctx.stroke();ctx.lineWidth=3;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(hx-s*11,hy-5);ctx.bezierCurveTo(hx-s*26,hy-8+wv,hx-s*38,hy+2-wv,hx-s*50,hy-2+wv*2);ctx.moveTo(hx-s*11,hy-4);ctx.bezierCurveTo(hx-s*24,hy+2+wv,hx-s*34,hy+12-wv,hx-s*44,hy+10+wv*1.6);ctx.stroke();ctx.fillStyle=flash?'#fff':f.col;ctx.fillRect(hx-s*12-2.5,hy-7.5,5,5)}
   if(f.acc==='orbit'){ctx.strokeStyle=f.col+'77';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(hx,hy-4,19,6,-.15*s,0,7);ctx.stroke();for(let k=0;k<2;k++){const a=G.f*.06+k*Math.PI;ctx.fillStyle=flash?'#fff':k?'#ffffff':f.col;ctx.beginPath();ctx.arc(hx+Math.cos(a)*19,hy-4+Math.sin(a)*6-Math.cos(a)*2*s,2.4,0,7);ctx.fill()}}
   if(f.acc==='icicle'){[[-9,-6,-2.4,13],[-12,2,-2.0,11],[-4,-12,-2.8,10]].forEach(([dx,dy,a,l])=>{ctx.save();ctx.translate(hx+s*dx,hy+dy);ctx.rotate(a*s);ctx.beginPath();ctx.moveTo(-3,0);ctx.lineTo(0,-l);ctx.lineTo(3,0);ctx.closePath();ctx.fillStyle=flash?'#fff':f.col;ctx.fill();ctx.strokeStyle=rim;ctx.lineWidth=1.5;ctx.stroke();ctx.restore()})}
   if(f.frost>0){const sc=f.frostSrc&&f.frostSrc.ult==='mimic'?'#dddddd':(f.frostSrc||f).col;for(let i=0;i<FROST_MAX;i++){const px=hx+(i-(FROST_MAX-1)/2)*12,py=hy-30;ctx.beginPath();ctx.moveTo(px,py-6);ctx.lineTo(px+4,py);ctx.lineTo(px,py+6);ctx.lineTo(px-4,py);ctx.closePath();
@@ -1556,7 +1595,8 @@ function render(){
   ctx.drawImage(bg,0,0,W,H);
   if(G.dark>.01){ctx.fillStyle=`rgba(0,0,0,${G.dark})`;ctx.fillRect(-W,-H,W*3,H*3)}
   {const m=drawSplit(props,u=>u.draw());if(m.length)monoLayer(()=>m.forEach(u=>u.draw()))}
-  [...F].sort((a,b)=>(a.st==='ko')-(b.st==='ko')).reverse().forEach(f=>{if(f.banished>0)return;monoBuffed(f)?monoLayer(()=>drawFighter(f)):drawFighter(f)});
+  [...F].sort((a,b)=>(a.st==='ko')-(b.st==='ko')).reverse().forEach(f=>{if(f.banished>0)return;if(f.vanish>0){ctx.save();ctx.globalAlpha=.08+.05*Math.sin(G.f*.5);drawFighter(f);ctx.restore();return}monoBuffed(f)?monoLayer(()=>drawFighter(f)):drawFighter(f)});
+  CL.forEach(c=>{ctx.save();ctx.globalAlpha=.62+.08*Math.sin(G.f*.2+c.x);c.ult==='mimic'?monoLayer(()=>drawFighter(c)):drawFighter(c);ctx.restore()}); // shadow clones, a little see-through
   projs.forEach(p=>{
     ctx.save();ctx.translate(p.x,p.y);ctx.scale(Math.sign(p.vx),1);
     ctx.shadowColor=p.o.col;ctx.shadowBlur=22;ctx.fillStyle=p.o.col;
@@ -1629,6 +1669,7 @@ const ICON={
   bloom:'<circle cx="12" cy="8" r="2"/><path d="M12 6c-1-3 1-4 0-4M12 10v12M12 16c-3-1-5 0-6 2M12 18c3-1 5 0 6 2M9 7c-3-1-4 2-2 3c1 1 3 0 5-2M15 7c3-1 4 2 2 3c-1 1-3 0-5-2"/>',
   glacier:'<path d="M12 2v20M3.5 7l17 10M3.5 17l17-10M9 4l3 3l3-3M9 20l3-3l3 3"/>',
   void:'<path d="M12 3l1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6z"/><path d="M3 21l4-4M17 17l4 4M4 4l3 3"/>',
+  clone:'<circle cx="8" cy="6" r="2.5"/><path d="M8 9v6M5 21l3-6l3 6M5 12h6"/><g stroke-dasharray="2 2"><circle cx="16" cy="6" r="2.5"/><path d="M16 9v6M13 21l3-6l3 6M13 12h6"/></g>',
   mimic:'<path d="M14 3a9 9 0 1 0 7 13a7 7 0 0 1-7-13z"/><path d="M16 8l2 2M18 6l1 1"/>'
 };
 const MANA_TXT=['สกิล 1 · ใช้มานา 1 ช่อง','สกิล 2 · ใช้มานา 2 ช่อง','ท่าไม้ตาย · มานาเต็มและเลือดต่ำกว่า 40% · คูลดาวน์ 40 วิ'];
@@ -1647,6 +1688,7 @@ const SKTXT={
   bloom:[['บุปผาสูบโลหิต','ดอกไม้งอกบนตัวคู่ต่อสู้ ดูดเลือดทีละน้อยมาเติมให้ตัวเองราว 3 วินาที'],['วิถีบุปผาพิษ','ฟันแล้วดอกไม้งอกเป็นแนวไปข้างหน้า ใครเหยียบจะเชื่องช้าและติดพิษ (ติดพิษ = ช้าลงหนักและตีเบาลง 30%)'],['สวนบุปผาพิษ','ดอกไม้ยักษ์และดอกเล็กๆ งอกเต็มสนาม คู่ต่อสู้เชื่องช้า 4 วินาทีและติดพิษ 4 วินาที']],
   glacier:[['ไอเหมันต์','พ่นไอเย็นเป็นสายไปข้างหน้า โดนแล้วได้รับดาเมจและติดแต้มน้ำแข็ง 1 แต้ม (สะสมครบ 3 แต้ม น้ำแข็งจะแตกระเบิดใส่ตัวศัตรู ดาเมจรุนแรง)'],['ดาบเหมันต์','เคลือบดาบด้วยน้ำแข็ง 7 วินาที ฟันโดนทุกครั้งเพิ่มแต้มน้ำแข็ง 1 แต้ม'],['ธารน้ำแข็ง','ธารน้ำแข็งงอกขึ้นกลืนตัวคู่ต่อสู้ ตัวแข็งขยับไม่ได้ราว 3 วินาที โดนความเย็นกัดเสียเลือดต่อเนื่อง ปิดท้ายด้วยแต้มน้ำแข็งอีก 2 แต้ม']],
   void:[['ฟันมิติ','ฟันจนอากาศตรงหน้าแตกร้าวเหมือนกระจก ศัตรูที่อยู่ในระยะโดนดาเมจและกระเด็น'],['ประตูมิติ','เปิดประตูมิติกลางระหว่างสองฝ่าย ดึงทั้งตัวเองและศัตรูหายไปจากสนามราว 1.5 วินาที ตอนกลับออกมาทั้งคู่กระเด็นไปคนละทาง แล้วสุ่ม 1 ใน 2 อย่าง: ฟื้นเลือดให้ตัวเอง หรือศัตรูโดนแรงบีบมิติเสียเลือด'],['ฉีกห้วงมิติ','ฟันมิติอย่างรุนแรงจนฉีกขาดเป็นช่องโหว่ของอวกาศ ศัตรูโดนกระหน่ำจากในรอยแยกหลายครั้งก่อนปิดท้ายด้วยแรงระเบิด']],
+  clone:[['ล่องหน','หายตัวไปครู่หนึ่ง ระหว่างนั้นโดนโจมตีไม่ได้ แล้วโผล่ออกมาข้างหลังศัตรูพร้อมฟันสวนทันที'],['แยกเงา','หายตัวแล้วกลับมาพร้อมร่างแยก 1 ร่างที่อีกฝั่งของศัตรู ร่างแยกฟันได้เบากว่าร่างจริง (40%) โดนอะไรนิดเดียวก็สลาย อยู่ได้นานสุด 8 วินาที และศัตรูจะหันไปสู้กับร่างที่อยู่ใกล้ที่สุด'],['พันเงามายา','หายตัวแล้วกลับมาพร้อมร่างแยก 3 ร่างล้อมศัตรู ร่างแยกพุ่งฟันผ่านทีละร่าง ปิดท้ายด้วยร่างจริง จากนั้นร่างแยกอยู่ช่วยสู้ต่อ']],
   mimic:[['เงาสะท้อน','สุ่มยืมสกิล 1 ของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ'],['เงาสะท้อนคู่','สุ่มยืมสกิล 2 ของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ'],['จันทร์สะท้อนพลัง','สุ่มยืมท่าไม้ตายของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ']]
 };
 const skIcons=r=>`<span class="sks">${[0,1,2].map(k=>`<span class="sk${k===2?' u':''}" role="button" tabindex="0" data-sk="${r.ult}:${k}" style="--c:${r.col}" aria-label="${SKTXT[r.ult][k][0]}"><i><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[r.ult]}</svg></i>${k===2?'ไม้ตาย':'สกิล '+(k+1)}</span>`).join('')}</span>`;
