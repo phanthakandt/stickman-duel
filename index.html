@@ -1595,7 +1595,7 @@ function render(){
   ctx.drawImage(bg,0,0,W,H);
   if(G.dark>.01){ctx.fillStyle=`rgba(0,0,0,${G.dark})`;ctx.fillRect(-W,-H,W*3,H*3)}
   {const m=drawSplit(props,u=>u.draw());if(m.length)monoLayer(()=>m.forEach(u=>u.draw()))}
-  [...F].sort((a,b)=>(a.st==='ko')-(b.st==='ko')).reverse().forEach(f=>{if(f.banished>0)return;if(f.vanish>0){ctx.save();ctx.globalAlpha=.08+.05*Math.sin(G.f*.5);drawFighter(f);ctx.restore();return}monoBuffed(f)?monoLayer(()=>drawFighter(f)):drawFighter(f)});
+  [...F].sort((a,b)=>(a.st==='ko')-(b.st==='ko')).reverse().forEach(f=>{if(f.banished>0)return;if(f.vanish>0)return;monoBuffed(f)?monoLayer(()=>drawFighter(f)):drawFighter(f)});
   CL.forEach(c=>{ctx.save();ctx.globalAlpha=.62+.08*Math.sin(G.f*.2+c.x);c.ult==='mimic'?monoLayer(()=>drawFighter(c)):drawFighter(c);ctx.restore()}); // shadow clones, a little see-through
   projs.forEach(p=>{
     ctx.save();ctx.translate(p.x,p.y);ctx.scale(Math.sign(p.vx),1);
