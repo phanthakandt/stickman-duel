@@ -105,9 +105,6 @@ button:disabled{opacity:.5;cursor:default;border-color:var(--line)}
 .card button{margin-top:6px}
 h2{font:600 20px Kanit,sans-serif;margin:26px 0 8px}
 #bet{color:var(--gold);margin:0 0 10px}
-#log{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-#log li{background:var(--panel);border-radius:8px;padding:8px 12px;font-size:15px}
-#log li.empty{color:var(--mute)}
 #rec.on{background:#c8102e;border-color:#c8102e;color:#fff}
 #rec.arm{border-color:#c8102e;color:#ff8a9a;animation:armBlink 1.2s ease-in-out infinite}@keyframes armBlink{50%{border-color:var(--line)}}
 #clip{display:grid;gap:8px;max-width:560px;margin:-6px 0 18px}#clip[hidden]{display:none}
@@ -150,8 +147,6 @@ h2{font:600 20px Kanit,sans-serif;margin:26px 0 8px}
 <div id="clip" hidden></div>
 <p id="bet"></p>
 <div class="cards" id="cards"></div>
-<h2>ผลการแข่ง</h2>
-<ul id="log"><li class="empty">ผลแต่ละยกจะขึ้นที่นี่</li></ul>
 </div>
 <script>
 {
@@ -454,7 +449,7 @@ function sparks(x,y,n,pw){for(let i=0;i<n;i++){const a=R(0,Math.PI*2),v=R(pw*.3,
 const dust=x=>burst(x,GY,'#d8b48a',8,2);
 const pop=(x,y,txt,col,big)=>pops.push({x,y,txt,col,t:0,big});
 const msg=(txt,dur=90,sub='')=>{if(['3','2','1'].includes(txt))sfx('beep');else if(txt==='Duel!'||/ชนะ!$/.test(txt))sfx('gong');G.msg={txt,t:0,dur,sub}};
-function addLog(s){logItems.unshift(s);logItems=logItems.slice(0,10);document.getElementById('log').innerHTML=logItems.map(x=>`<li>${x}</li>`).join('')}
+function addLog(s){} // the results list was removed from the page
 let fxs=[];
 const slashFx=(x,y,a,col)=>fxs.push({ty:'line',x,y,a,col,t:0,life:14});
 const flashFx=(x,y,r=60)=>fxs.push({ty:'flash',x,y,r,t:0,life:9});
