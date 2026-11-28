@@ -103,6 +103,11 @@ h2{font:600 20px Kanit,sans-serif;margin:26px 0 8px}
 #log{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 #log li{background:var(--panel);border-radius:8px;padding:8px 12px;font-size:15px}
 #log li.empty{color:var(--mute)}
+#rec.on{background:#c8102e;border-color:#c8102e;color:#fff}
+#clip{display:grid;gap:8px;max-width:560px;margin:-6px 0 18px}#clip[hidden]{display:none}
+#clip video{width:100%;border-radius:10px;background:#000}
+#clip .row2{display:flex;gap:8px;flex-wrap:wrap}#clip .big{background:var(--gold);color:#1a120c;border-color:var(--gold)}
+#clip a.btn{display:inline-flex;align-items:center;font:600 16px Kanit,sans-serif;min-height:44px;padding:0 18px;border-radius:10px;border:2px solid var(--line);background:var(--panel);color:var(--ink);text-decoration:none}
 @media(max-width:600px){.cards{grid-template-columns:1fr}.spacer{display:none}}
 </style></head><body>
 <div class="wrap">
@@ -130,9 +135,11 @@ h2{font:600 20px Kanit,sans-serif;margin:26px 0 8px}
     <button data-sp="0.5">ช้า 0.5×</button><button data-sp="1">ปกติ 1×</button><button data-sp="2" class="on">เร็ว 2×</button>
   </div>
   <span class="spacer"></span>
+  <button id="rec" hidden>● อัดคลิป</button>
   <button id="fs" hidden>เต็มจอ</button>
   <button id="new">เลือกตัวละครใหม่</button>
 </div>
+<div id="clip" hidden></div>
 <p id="bet"></p>
 <div class="cards" id="cards"></div>
 <h2>ผลการแข่ง</h2>
@@ -1305,13 +1312,13 @@ function gtStart(hero){GT={hero,queue:shuffle(ROSTER.map((_,i)=>i).filter(i=>i!=
 function gtResult(w){
   const n=GT.queue.length,h=F[0],o=F[1];G.pt=0;
   if(w===h){GT.idx++;
-    if(GT.idx>=n){G.phase='gtend';GT.clear=true;const rec=gtSave(GT.idx,true);sfx('gong');
+    if(GT.idx>=n){G.phase='gtend';recOnResult();GT.clear=true;const rec=gtSave(GT.idx,true);sfx('gong');
       msg('เคลียร์!',99999,`${h.name} ล้มครบทั้ง ${n} ตัว`);
       addLog(`🏆 <b style="color:${h.col}">${h.name}</b> เคลียร์โหมดไล่ล้ม! (เคลียร์มาแล้ว ${rec.clears} ครั้ง)`);
       setReady(`เคลียร์มาแล้ว ${rec.clears} ครั้งด้วย ${h.name}`,'เล่นอีกรอบ',true)}
     else{G.phase='gtnext';msg('ชนะ!',99999,'');
       addLog(`ด่าน ${GT.idx}/${n} — <b style="color:${h.col}">${h.name}</b> ล้ม <b style="color:${o.col}">${o.name}</b> ได้`)}
-  }else{G.phase='gtend';const rec=gtSave(GT.idx,false);
+  }else{G.phase='gtend';recOnResult();const rec=gtSave(GT.idx,false);
     msg('พ่ายแพ้',99999,`ล้มได้ ${GT.idx} จาก ${n} ตัว`);
     addLog(`<b style="color:${h.col}">${h.name}</b> แพ้ให้ <b style="color:${o.col}">${o.name}</b> ที่ด่าน ${GT.idx+1} · ล้มได้ ${GT.idx} ตัว (สถิติดีสุด ${rec.best})`);
     setReady(`สถิติดีสุดของ ${h.name}: ล้มได้ ${rec.best} จาก ${n} ตัว`,'ลองใหม่',true)}
@@ -1319,7 +1326,7 @@ function gtResult(w){
 function endRound(){
   if(F.some(f=>f.wins>=need())){
     const w=F.find(f=>f.wins>=need());if(G.gt){gtResult(w);return}
-    G.phase='over';G.pt=0;msg(w.name+' ชนะ!',99999,`รีแมตช์ใน 8 วินาที`);
+    G.phase='over';recOnResult();G.pt=0;msg(w.name+' ชนะ!',99999,`รีแมตช์ใน 8 วินาที`);
     addLog(`<b style="color:${w.col}">${w.name}</b> ชนะแมตช์ ${w.wins}–${F.find(f=>f!==w).wins}`+(G.bet!==null?(F[G.bet]===w?' · คุณทายถูก!':' · คุณทายผิด'):''));
     betLine(w);
   }else{G.round++;startRound()}
@@ -1738,7 +1745,7 @@ function drawPortraits(){
   ctx=mainCtx;
 }
 function openSelect(){
-  selecting=true;document.body.classList.add('picking');sel.hidden=false;cv.style.display='none';if(paused)togglePause();slot=0;renderRoster();
+  recStop();selecting=true;document.body.classList.add('picking');sel.hidden=false;cv.style.display='none';if(paused)togglePause();slot=0;renderRoster();
 }
 const stageEl=document.querySelector('.stage'),fsBtn=document.getElementById('fs');
 const fsOn=()=>document.fullscreenElement||document.webkitFullscreenElement;
@@ -1774,6 +1781,36 @@ const sndBtn=document.getElementById('sndBtn'),musBtn=document.getElementById('m
 function showSnd(){sndBtn.textContent=SND.on?'เสียงเอฟเฟกต์: เปิด':'เสียงเอฟเฟกต์: ปิด';musBtn.textContent=SND.music?'ดนตรี: เปิด':'ดนตรี: ปิด';sndBtn.classList.toggle('on',SND.on);musBtn.classList.toggle('on',SND.music);
   try{localStorage.setItem('sd-snd',JSON.stringify(SND))}catch(e){}if(AC){SFXG.gain.value=SND.on?1:0;MUSG.gain.value=SND.music?.32:0}}
 sndBtn.addEventListener('click',()=>{initAudio();SND.on=!SND.on;showSnd()});musBtn.addEventListener('click',()=>{initAudio();SND.music=!SND.music;showSnd()});showSnd();
+/* ---------- clip recorder: records the arena with its sound; stops by itself 4 s after a result ---------- */
+const recBtn=document.getElementById('rec'),clipEl=document.getElementById('clip');
+let REC=null,clipURL=null;
+const recMime=(()=>{if(!window.MediaRecorder||!cv.captureStream)return null;for(const m of ['video/mp4;codecs=avc1,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'])try{if(MediaRecorder.isTypeSupported(m))return m}catch(e){}return ''})();
+if(recMime!==null)recBtn.hidden=false;
+function recLabel(){if(!REC){recBtn.textContent='● อัดคลิป';recBtn.classList.remove('on');return}recBtn.classList.add('on');
+  if(REC.stopAt){recBtn.textContent=`■ รู้ผลแล้ว หยุดใน ${Math.max(0,Math.ceil((REC.stopAt-performance.now())/1000))} วิ`;return}
+  const sec=Math.floor((performance.now()-REC.t0)/1000);recBtn.textContent=`■ หยุดอัด ${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`}
+function recStart(){
+  initAudio();const st=cv.captureStream(60);let dest=null;
+  if(AC&&OUT){try{dest=AC.createMediaStreamDestination();OUT.connect(dest);dest.stream.getAudioTracks().forEach(t=>st.addTrack(t))}catch(e){dest=null}}
+  let mr=null;try{mr=recMime?new MediaRecorder(st,{mimeType:recMime,videoBitsPerSecond:6e6}):new MediaRecorder(st)}catch(e){try{mr=new MediaRecorder(st)}catch(e2){}}
+  if(!mr){st.getTracks().forEach(t=>t.stop());recBtn.hidden=true;return}
+  const chunks=[];mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+  mr.onstop=()=>{if(dest)try{OUT.disconnect(dest)}catch(e){}st.getTracks().forEach(t=>t.stop());const type=(mr.mimeType||recMime||'video/webm').split(';')[0];if(chunks.length)showClip(new Blob(chunks,{type}),type)};
+  mr.start(500);REC={mr,t0:performance.now(),stopAt:0,iv:setInterval(recLabel,250)};clipEl.hidden=true;recLabel();
+}
+function recStop(){if(!REC)return;const r=REC;REC=null;clearInterval(r.iv);clearTimeout(r.to);try{r.mr.stop()}catch(e){}recLabel()}
+function recOnResult(){if(REC&&!REC.stopAt){REC.stopAt=performance.now()+4000;REC.to=setTimeout(recStop,4000);recLabel()}}
+recBtn.addEventListener('click',()=>REC?recStop():recStart());
+function showClip(blob,type){
+  if(clipURL)URL.revokeObjectURL(clipURL);clipURL=URL.createObjectURL(blob);
+  const ext=type.includes('mp4')?'mp4':'webm',d=new Date(),p=n=>String(n).padStart(2,'0'),name=`stickman-duel-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.${ext}`;
+  let file=null,canShare=false;try{file=new File([blob],name,{type});canShare=!!(navigator.canShare&&navigator.canShare({files:[file]}))}catch(e){}
+  clipEl.innerHTML=`<b>คลิปพร้อมแล้ว</b><video src="${clipURL}" controls playsinline></video><div class="row2">${canShare?'<button id="clipShare" class="big">แชร์ / บันทึกลงรูปภาพ</button>':''}<a class="btn" href="${clipURL}" download="${name}">ดาวน์โหลดไฟล์</a><button id="clipX">ปิด</button></div>`;
+  clipEl.hidden=false;
+  if(canShare)document.getElementById('clipShare').onclick=()=>navigator.share({files:[file]}).catch(()=>{});
+  document.getElementById('clipX').onclick=()=>{clipEl.hidden=true};
+  try{clipEl.scrollIntoView({block:'nearest',behavior:'smooth'})}catch(e){}
+}
 const readyEl=document.getElementById('ready');
 document.getElementById('go').addEventListener('click',()=>{if(G.phase==='gtend'&&GT){gtStart(GT.hero);return}if(G.phase!=='ready')return;G.phase='intro';G.pt=0;G.locked=true;renderCards();betLine();if(paused)togglePause()});
 function loop(now){
