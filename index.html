@@ -1309,12 +1309,12 @@ function newMatch(){
   F=[mk(0,picks[0]),mk(1,picks[1])];G={f:G.f||0,round:1,phase:'ready',pt:0,timer:3600,hitstop:0,shake:0,slowT:0,msg:null,bet:null,locked:false,gt:!!GT};
   parts=[];pops=[];startRound();G.phase='ready';G.msg=null;renderCards();betLine();
   if(GT){addLog(`— ด่าน ${GT.idx+1}/${GT.queue.length}: <b style="color:${F[0].col}">${F[0].name}</b> ปะทะ <b style="color:${F[1].col}">${F[1].name}</b> —`);
-    setReady(GT.idx?`ด่าน ${GT.idx+1}/${GT.queue.length} · ${F[0].name} ปะทะ ${F[1].name}`:`ตัวเอก ${F[0].name} · ต้องล้มคู่ต่อสู้ ${GT.queue.length} ตัว ยกเดียวรู้ผล`,GT.idx?'เริ่มสู้!':'เริ่มไล่ล้ม!',false)}
+    setReady(GT.idx?`ด่าน ${GT.idx+1}/${GT.queue.length} · ${F[0].name} ปะทะ ${F[1].name}`:`ตัวเอก ${F[0].name} · ต้องล้มคู่ต่อสู้ ${GT.queue.length} ตัว ชนะ 2 ใน 3 ยก`,GT.idx?'เริ่มสู้!':'เริ่มไล่ล้ม!',false)}
   else{addLog(`— แมตช์ใหม่: <b style="color:${F[0].col}">${F[0].name}</b> ปะทะ <b style="color:${F[1].col}">${F[1].name}</b> —`);setReady('','เริ่มสู้!',false)}
 }
 /* ---------- gauntlet: one hero against every other sword in random order, one round each, until they fall ---------- */
 let GT=null;
-const need=()=>G.gt?1:2;
+const need=()=>2; // every match, duel or gauntlet stage, is best of three
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=RI(0,i);[a[i],a[j]]=[a[j],a[i]]}return a};
 function gtRecords(){try{return JSON.parse(localStorage.getItem('sd-gt')||'{}')}catch(e){return{}}}
 function gtSave(n,clear){const r=gtRecords(),k=ROSTER[GT.hero].name,o=r[k]||{best:0,clears:0};o.best=Math.max(o.best,n);if(clear)o.clears++;r[k]=o;try{localStorage.setItem('sd-gt',JSON.stringify(r))}catch(e){}return o}
@@ -1573,7 +1573,7 @@ function hud(){
   ctx.fillStyle='#120a07dd';ctx.fillRect(W/2-36,14,72,50);
   ctx.font='30px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillStyle='#f6eadb';ctx.fillText('∞',W/2,40);
-  ctx.font='600 13px Kanit, sans-serif';ctx.fillStyle='#b9a796';ctx.fillText(G.gt&&GT?`ด่าน ${Math.min(GT.idx+1,GT.queue.length)}/${GT.queue.length}`:'ยกที่ '+G.round,W/2,76);
+  ctx.font='600 13px Kanit, sans-serif';ctx.fillStyle='#b9a796';ctx.fillText(G.gt&&GT?`ด่าน ${Math.min(GT.idx+1,GT.queue.length)}/${GT.queue.length} · ยก ${G.round}`:'ยกที่ '+G.round,W/2,76);
 }
 function ultTitle(){
   const U=G.ult,t=U.t,f=U.f;if(t<18||t>106)return;
@@ -1759,7 +1759,7 @@ function renderRoster(){
   [0,1].forEach(i=>{const r=mk(i,picks[i]),el=document.getElementById('s'+i);el.textContent=r.name;el.style.color=r.col;
     if(gt&&i===1){el.textContent=`สุ่มทั้ง ${ROSTER.length-1} ตัว`;el.style.color='var(--mute)'}
     document.querySelector(`[data-slot="${i}"]`).classList.toggle('act',gt?i===0:slot===i)});
-  if(gt){const rec=gtRecords()[ROSTER[picks[0]].name];document.getElementById('hint').textContent=`แตะเลือกตัวเอก 1 ตัว แล้วสู้กับทุกตัวที่เหลือแบบสุ่มลำดับ ยกเดียวรู้ผล แพ้เมื่อไรจบ ล้มครบคือเคลียร์`+(rec?` · สถิติ ${ROSTER[picks[0]].name}: ดีสุด ${rec.best} ตัว, เคลียร์ ${rec.clears} ครั้ง`:'')}
+  if(gt){const rec=gtRecords()[ROSTER[picks[0]].name];document.getElementById('hint').textContent=`แตะเลือกตัวเอก 1 ตัว แล้วสู้กับทุกตัวที่เหลือแบบสุ่มลำดับ ชนะ 2 ใน 3 ยก แพ้เมื่อไรจบ ล้มครบคือเคลียร์`+(rec?` · สถิติ ${ROSTER[picks[0]].name}: ดีสุด ${rec.best} ตัว, เคลียร์ ${rec.clears} ครั้ง`:'')}
   else document.getElementById('hint').textContent=`แตะตัวละครเพื่อวางไว้ฝั่ง${slot?'ขวา':'ซ้าย'} · เลือกตัวเดียวกันทั้งสองฝั่งก็ได้ (ร่างแฝดจะเปลี่ยนสี)`;
 }
 function drawPortraits(){
