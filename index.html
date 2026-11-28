@@ -1823,14 +1823,15 @@ function recStart(){
 }
 function recStop(){if(!REC)return;const r=REC;REC=null;clearInterval(r.iv);clearTimeout(r.to);if(r.mr)try{r.mr.stop()}catch(e){}recLabel()}
 recBtn.addEventListener('click',()=>REC?recStop():recArm());
+function dropClip(){clipEl.hidden=true;const v=clipEl.querySelector('video');if(v){v.removeAttribute('src');v.load()}clipEl.innerHTML='';if(clipURL){URL.revokeObjectURL(clipURL);clipURL=null}} // frees the clip from memory
 function showClip(blob,type){
   if(clipURL)URL.revokeObjectURL(clipURL);clipURL=URL.createObjectURL(blob);
   const ext=type.includes('mp4')?'mp4':'webm',d=new Date(),p=n=>String(n).padStart(2,'0'),name=`stickman-duel-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.${ext}`;
   let file=null,canShare=false;try{file=new File([blob],name,{type});canShare=!!(navigator.canShare&&navigator.canShare({files:[file]}))}catch(e){}
-  clipEl.innerHTML=`<b>คลิปพร้อมแล้ว</b><video src="${clipURL}" controls playsinline></video><div class="row2">${canShare?'<button id="clipShare" class="big">แชร์ / บันทึกลงรูปภาพ</button>':''}<a class="btn" href="${clipURL}" download="${name}">ดาวน์โหลดไฟล์</a><button id="clipX">ปิด</button></div>`;
+  clipEl.innerHTML=`<b>คลิปพร้อมแล้ว</b><video src="${clipURL}" controls playsinline></video><div class="row2">${canShare?'<button id="clipShare" class="big">แชร์ / บันทึกลงรูปภาพ</button>':''}<a class="btn" href="${clipURL}" download="${name}">ดาวน์โหลดไฟล์</a><button id="clipX">ลบคลิป</button></div>`;
   clipEl.hidden=false;
   if(canShare)document.getElementById('clipShare').onclick=()=>navigator.share({files:[file]}).catch(()=>{});
-  document.getElementById('clipX').onclick=()=>{clipEl.hidden=true};
+  document.getElementById('clipX').onclick=dropClip;
   try{clipEl.scrollIntoView({block:'nearest',behavior:'smooth'})}catch(e){}
 }
 const readyEl=document.getElementById('ready');
