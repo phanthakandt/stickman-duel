@@ -529,7 +529,7 @@ const RAISE=[0,2,-52,Math.PI,.3,.1,-.3,-.4],IAI=[.35,0,32,-1.65,.9,.15,-.7,-1.1]
 const ULT_CD=2400; // 40 s between ultimates, carried across rounds
 function startUlt(f,o){sfx('ult');if(f.ult==='mimic'){const ks=KIT();f.borrow=ks[Math.floor(Math.random()*ks.length)]}
   f.ultUsed=true;f.ultCd=ULT_CD;f.en=0;f.blockAt=0;f.s=o.x>f.x?1:-1;
-  set(f,'ultpose');set(o,'stun');f.vx=o.vx=0;projs=[];ufx=[];
+  set(f,'ultpose');set(o,'stun');f.vx=o.vx=0;projs=[];ufx=ufx.filter(u=>u.bugOf===f);
   G.ult={f,o,t:0};G.msg=null;G.camT={x:f.x+f.s*105,y:f.y-62,z:2.1};G.darkT=1;
   addLog(`ยกที่ ${G.round} — <b style="color:${f.col}">${f.name}</b> ปลดปล่อยดาบ!`);
 }
@@ -808,11 +808,15 @@ const ULT={
     if(e===82)cut(f,o,0,6,1);
     return e>=115;
   },
-  swarm(f,o,e){ // ภมรมฤตยู: a great swarm of ten bugs pours out and keeps biting
-    if(e===0){set(f,'ult');f.upose=RAISE;f.uk=.35}
-    if(e>=6&&e<46&&e%4===2){sfx('buzz');ufx.push(bug(f,o,315,1.5,54))}
-    if(e===50){f.upose=ST.mushi;f.uk=.3}
-    return e>=70;
+  swarm(f,o,e){ // ภมรมฤตยู: ten bugs join the swarm circling the arena; one cut, and every bug dives at the foe at once
+    if(e===0){set(f,'ult');f.upose=RAISE;f.uk=.35;ufx.forEach(u=>{if(u.bugOf===f&&!u.gone)u.hold=1})}
+    if(e>=4&&e<44&&e%4===0){sfx('buzz');const b=bug(f,o,240,1.7,52,9999);b.hold=1;b.ult=1;ufx.push(b)}
+    if(e===72){f.upose=ATK.men.A;f.uk=.5}
+    if(e===84){f.upose=ATK.men.B;f.uk=1;arcFx(f,ATK.men);sfx('slash',1.6);sfx('buzz');G.shake=8;flashFx(f.tipW?f.tipW[0]:f.x,f.tipW?f.tipW[1]:f.y-120,90);
+      ufx.forEach(u=>{if(u.bugOf===f&&!u.gone){u.hold=0;u.charge=1}})}
+    if(e===126)ultHit(f,o,14,1);
+    if(e===130){f.upose=ST.mushi;f.uk=.3}
+    return e>=150;
   },
   clone(f,o,e){ // มายาพันร่าง: vanish, return with three shadow clones, and all four cut through the foe in turn
     if(e===0){set(f,'ult');f.upose=[0,6,-34,3.55,.5,.1,-.35,-.55];f.uk=.4}
@@ -1137,6 +1141,11 @@ function bug(f,o,life,dmg,gap,roam=0){let tg=o,ang=R(0,6.28);const r=R(38,70),sp
       const end=this.t>roam+life||tg.st==='ko'||f.st==='ko'||(G.phase!=='fight'&&!G.ult);
       if(end){this.y-=3;this.x+=Math.cos(ang)*3;this.gone=(this.gone||0)+1;if(this.gone>20||this.y<-20)this.dead=1;return}
       const hid=tg.vanish>0||tg.banished>0;ang+=sp;
+      if(this.hold)roam=Math.max(roam,this.t+1); // held: keep circling the arena until the order comes
+      if(this.charge){const tx=tg.x+R(-10,10),ty=tg.y-95+R(-25,25);this.dir=Math.sign(tx-this.x)||1;this.x+=(tx-this.x)*.2;this.y+=(ty-this.y)*.2;
+        if(Math.hypot(tx-this.x,ty-this.y)<28||(this.ct=(this.ct||0)+1)>60){this.charge=0;roam=Math.min(roam,this.t);this.next=this.t+gap;
+          if(!hid&&tg.st!=='ko')ultHit(f,tg,this.ult?3.1:1.5,0,this.x,this.y);burst(this.x,this.y,f.col,8,3);if(this.ult){this.dead=1;return}}
+        return}
       if(this.t<roam){const k=this.t*1;const tx=W/2+Math.cos(k*ax+ph)*rx,ty=cy+Math.sin(k*ay+p2)*ry;this.dir=Math.sign(tx-this.x)||1;this.x+=(tx-this.x)*.05;this.y+=(ty-this.y)*.05;if(this.t%90===0&&Math.random()<.3)sfx('buzz');return}
       let tx=(hid?f.x:tg.x)+Math.cos(ang)*r,ty=(hid?f.y:tg.y)-95+Math.sin(ang*1.3+ph)*r*.55;
       if(this.dive>0){this.dive--;tx=tg.x+R(-6,6);ty=tg.y-95+R(-20,20);
@@ -1766,7 +1775,7 @@ const SKTXT={
   glacier:[['ไอเหมันต์','พ่นไอเย็นเป็นสายไปข้างหน้า โดนแล้วได้รับดาเมจและติดแต้มน้ำแข็ง 1 แต้ม (สะสมครบ 3 แต้ม น้ำแข็งจะแตกระเบิดใส่ตัวศัตรู ดาเมจรุนแรง)'],['ดาบเหมันต์','เคลือบดาบด้วยน้ำแข็ง 7 วินาที ฟันโดนทุกครั้งเพิ่มแต้มน้ำแข็ง 1 แต้ม'],['ธารน้ำแข็ง','ธารน้ำแข็งงอกขึ้นกลืนตัวคู่ต่อสู้ ตัวแข็งขยับไม่ได้ราว 3 วินาที โดนความเย็นกัดเสียเลือดต่อเนื่อง ปิดท้ายด้วยแต้มน้ำแข็งอีก 2 แต้ม']],
   void:[['ฟันมิติ','ฟันจนอากาศตรงหน้าแตกร้าวเหมือนกระจก ศัตรูที่อยู่ในระยะโดนดาเมจและกระเด็น'],['ประตูมิติ','เปิดประตูมิติกลางระหว่างสองฝ่าย ดึงทั้งตัวเองและศัตรูหายไปจากสนามราว 1.5 วินาที ตอนกลับออกมาทั้งคู่กระเด็นไปคนละทาง แล้วสุ่ม 1 ใน 2 อย่าง: ฟื้นเลือดให้ตัวเอง หรือศัตรูโดนแรงบีบมิติเสียเลือด'],['ฉีกห้วงมิติ','ฟันมิติอย่างรุนแรงจนฉีกขาดเป็นช่องโหว่ของอวกาศ ศัตรูโดนกระหน่ำจากในรอยแยกหลายครั้งก่อนปิดท้ายด้วยแรงระเบิด']],
   clone:[['ล่องหน','หายตัวไปครู่หนึ่ง ระหว่างนั้นโดนโจมตีไม่ได้ แล้วโผล่ออกมาข้างหลังศัตรูพร้อมฟันสวนทันที'],['แยกเงา','หายตัวแล้วกลับมาพร้อมร่างแยก 1 ร่างที่อีกฝั่งของศัตรู ร่างแยกฟันได้เบากว่าร่างจริง (40%) โดนอะไรนิดเดียวก็สลาย อยู่ได้นานสุด 8 วินาที และศัตรูจะหันไปสู้กับร่างที่อยู่ใกล้ที่สุด'],['พันเงามายา','หายตัวแล้วกลับมาพร้อมร่างแยก 3 ร่างล้อมศัตรู ร่างแยกพุ่งฟันผ่านทีละร่าง ปิดท้ายด้วยร่างจริง จากนั้นร่างแยกอยู่ช่วยสู้ต่อ']],
-  swarm:[['ภมรรุม','เรียกแมลง 3 ตัวออกมาบินวนรอบสังเวียน 2–4 วินาที แล้วค่อยบินไปรุมกัดศัตรูอีกราว 5 วินาที ใช้ซ้ำเพื่อเพิ่มแมลงได้เรื่อยๆ (กด 3 ครั้ง = 9 ตัว) ศัตรูที่ตั้งการ์ดหันหน้ารับจะปัดได้'],['เหล็กในพิฆาต','พุ่งแทงดาบไปข้างหน้าเหมือนเหล็กใน ถ้าโดนศัตรูจะติดพิษ (ช้าลงหนัก ตีเบาลง 30% และเสียเลือดทีละน้อย) 5 วินาที'],['มหาฝูงภมร','ปล่อยฝูงแมลงราว 10 ตัวออกมาบินวนรอบศัตรูแล้วรุมกัดต่อเนื่องราว 5 วินาที']],
+  swarm:[['ภมรรุม','เรียกแมลง 3 ตัวออกมาบินวนรอบสังเวียน 2–4 วินาที แล้วค่อยบินไปรุมกัดศัตรูอีกราว 5 วินาที ใช้ซ้ำเพื่อเพิ่มแมลงได้เรื่อยๆ (กด 3 ครั้ง = 9 ตัว) ศัตรูที่ตั้งการ์ดหันหน้ารับจะปัดได้'],['เหล็กในพิฆาต','พุ่งแทงดาบไปข้างหน้าเหมือนเหล็กใน ถ้าโดนศัตรูจะติดพิษ (ช้าลงหนัก ตีเบาลง 30% และเสียเลือดทีละน้อย) 5 วินาที'],['มหาฝูงภมร','ปล่อยแมลงอีก 10 ตัวขึ้นไปบินวนรอบสังเวียน รวมกับแมลงจากสกิล 1 ที่บินอยู่แล้ว จากนั้นฟันดาบสั่งการ แมลงทุกตัวพุ่งเข้ารุมกัดศัตรูพร้อมกัน']],
   mimic:[['เงาสะท้อน','สุ่มยืมสกิล 1 ของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ'],['เงาสะท้อนคู่','สุ่มยืมสกิล 2 ของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ'],['จันทร์สะท้อนพลัง','สุ่มยืมท่าไม้ตายของนักดาบคนอื่นมาใช้ ท่าที่ยืมมาจะเป็นสีขาว-ดำ']]
 };
 const skIcons=r=>`<span class="sks">${[0,1,2].map(k=>`<span class="sk${k===2?' u':''}" role="button" tabindex="0" data-sk="${r.ult}:${k}" style="--c:${r.col}" aria-label="${SKTXT[r.ult][k][0]}"><i><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[r.ult]}</svg></i>${k===2?'ไม้ตาย':'สกิล '+(k+1)}</span>`).join('')}</span>`;
