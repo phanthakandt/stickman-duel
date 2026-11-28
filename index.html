@@ -62,7 +62,7 @@ body:not(.picking) .bar{max-width:max(560px,calc((100dvh - 96px)*16/9));margin-i
 .sk.open i,.sk:focus-visible i{background:var(--c);color:#120a07;border-color:var(--c)}
 .sk:focus-visible{outline:none}
 @media(hover:hover){.sk:hover i{border-color:var(--c)}}
-#skpop{position:absolute;z-index:5;width:min(320px,calc(100% - 24px));background:#120c09f2;border:2px solid var(--c);border-radius:12px;padding:12px 14px;box-shadow:0 14px 40px #000c;text-align:left}
+#skpop{position:fixed;z-index:50;width:min(320px,calc(100vw - 24px));max-height:calc(100vh - 16px);overflow:auto;background:#120c09f2;border:2px solid var(--c);border-radius:12px;padding:12px 14px;box-shadow:0 14px 40px #000c;text-align:left}
 #skpop[hidden]{display:none}
 #skpop b{display:block;font:700 18px/1.2 Kanit,sans-serif;color:var(--c)}
 #skpop small{display:block;color:var(--gold);font-size:12px;margin:2px 0 6px}
@@ -1696,12 +1696,13 @@ const skpop=document.createElement('div');skpop.id='skpop';skpop.hidden=true;skp
 let skOpen=null;
 function closeSk(){skpop.hidden=true;if(skOpen)skOpen.classList.remove('open');skOpen=null}
 function openSk(el){
-  if(skOpen===el){closeSk();return}closeSk();if(!skpop.parentNode)sel.appendChild(skpop);
+  if(skOpen===el){closeSk();return}closeSk();if(!skpop.parentNode)document.body.appendChild(skpop); // on the page itself, so the arena's rounded edge can't clip it
   const [kit,k]=el.dataset.sk.split(':'),r=ROSTER.find(x=>x.ult===kit),[nm,tx]=SKTXT[kit][+k];
   skpop.style.setProperty('--c',r.col);skpop.innerHTML=`<b>${nm}</b><small>${r.name} · ${MANA_TXT[+k]}</small><p>${tx}</p>`;
   skpop.hidden=false;skOpen=el;el.classList.add('open');
-  const sb=sel.getBoundingClientRect(),eb=el.getBoundingClientRect(),pw=skpop.offsetWidth;
-  skpop.style.left=Math.max(12,Math.min(sb.width-pw-12,eb.left-sb.left+eb.width/2-pw/2))+'px';skpop.style.top=(eb.bottom-sb.top+8)+'px';
+  const eb=el.getBoundingClientRect(),pw=skpop.offsetWidth,ph=skpop.offsetHeight,vw=innerWidth,vh=innerHeight;
+  let top=eb.bottom+8;if(top+ph>vh-8)top=Math.max(8,eb.top-ph-8); // no room below: open above the icon
+  skpop.style.left=Math.max(8,Math.min(vw-pw-8,eb.left+eb.width/2-pw/2))+'px';skpop.style.top=top+'px';
 }
 const pfs=ROSTER.map((r,i)=>Object.assign({},r,{id:i,x:0,y:GY,s:1,st:'idle',t:0,p:null}));
 let pcs=[];
@@ -1756,6 +1757,7 @@ rosterEl.addEventListener('click',e=>{
   picks[slot]=i;slot=o;renderRoster();
 });
 rosterEl.addEventListener('keydown',e=>{const sk=e.target.closest('[data-sk]');if(sk&&(e.key==='Enter'||e.key===' ')){e.preventDefault();e.stopPropagation();openSk(sk)}if(e.key==='Escape')closeSk()});
+addEventListener('scroll',()=>{if(skOpen)closeSk()},{passive:true});addEventListener('resize',()=>{if(skOpen)closeSk()});
 document.addEventListener('pointerdown',e=>{if(skOpen&&!e.target.closest('#skpop')&&!e.target.closest('[data-sk]'))closeSk()});
 document.querySelectorAll('[data-slot]').forEach(b=>b.addEventListener('click',()=>{slot=+b.dataset.slot;renderRoster()}));
 document.getElementById('rnd').addEventListener('click',()=>{
